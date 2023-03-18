@@ -1,6 +1,6 @@
 #!/bin/sh
 CC="cc"
-CFLAGS="-std=c99"
+CFLAGS="-std=c99 -Werror=implicit-function-declaration"
 
 AR="ar"
 RANLIB="ranlib"
@@ -168,7 +168,7 @@ while [ $# -ne 0 ]; do
 			fi
 			;;
 		--help | --*)
-			printf "PocketLinux32's Generic C99 Configure System v0.04\n\n"
+			printf "PocketLinux32's Generic C99 Configure System v0.05\n\n"
 			printf "Usage: $0 [OPTIONS]...\n\n"
 			echo "Install Options"
 			echo "--prefix=DIR			Set install path (default=/usr/local)"
