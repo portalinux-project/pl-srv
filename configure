@@ -1,0 +1,213 @@
+#!/bin/sh
+CC="cc"
+CFLAGS="-std=c99"
+
+AR="ar"
+RANLIB="ranlib"
+prefix="/usr/local"
+exec_prefix="$prefix"
+bindir="$exec_prefix/bin"
+libdir="$prefix/lib"
+includedir="$prefix/include"
+platform="c"
+indev=0
+
+fatal_error(){
+	echo "Error: $@!"
+	echo "Notice: If you're not a project maintainer, this is a bug. Please report this to the project maintainers."
+	exit 1
+}
+
+update_prefixes(){
+	if [ "$1" = "" ]; then
+		exec_prefix="$prefix"
+	fi
+	bindir="$exec_prefix/bin"
+	libdir="$prefix/lib"
+	includedir="$prefix/include"
+}
+
+generate_config(){
+	if [ ! -f ./defaults.conf ]; then
+		fatal_error "Defaults file is missing"
+	fi
+
+	. ./defaults.conf
+
+	if [ "$main_project" = "" ]; then
+		fatal_error "Main project field is empty"
+	elif [ $(echo "$main_project" | grep -c '|') -lt 1 ]; then
+		fatal_error "Invalid main project field"
+	fi
+
+	echo "Checking install prefix...$prefix"
+	echo "Checking executable install prefix...$exec_prefix"
+	echo "Checking binary install prefix...$bindir"
+	echo "Checking library install prefix...$libdir"
+	echo "Checking headers install prefix...$includedir"
+	printf "Detecting target system..."
+	if [ "$target" = "" ]; then
+		echo "native."
+	else
+		echo "$target."
+	fi
+	printf "Detecting C compiler..."
+	compiler_check="$(realpath $(command -v $CC))"
+	if [ $(echo "$compiler_check" | grep clang -c) -ne 0 ]; then
+		echo "clang"
+		if [ "$target" != "" ]; then
+			CFLAGS="--target=$target $CFLAGS"
+		fi
+	elif [ $(echo "$compiler_check" | grep gcc -c) -ne 0 ]; then
+		echo "gcc"
+		if [ $(echo $(basename $CC) | grep "$target" -c) -eq 0 ]; then
+			compile_dir="$(dirname $CC)"
+			compile_name="$(basename $CC)"
+
+			if [ "$compile_dir" != "." ]; then
+				CC="$compile_dir/"
+			else
+				CC=""
+			fi
+
+			CC="$CC$target-$compile_name"
+		fi
+	else
+		echo "$CC"
+	fi
+	echo "Compiler flags set...$CFLAGS"
+	if [ "$LDFLAGS" != "" ]; then
+		echo "Linker flags set...$LDFLAGS"
+	fi
+
+	compile_config_str="CC=\"$CC\"\nCFLAGS=\"$CFLAGS\"\nAR=\"$AR\"\nRANLIB=\"$RANLIB\"\n"
+	install_config_str="prefix=\"$prefix\"\nexec_prefix=\"$exec_prefix\"\nbindir=\"$bindir\"\nlibdir=\"$libdir\"\nincludedir=\"$includedir\"\n"
+
+	if [ "$LDFLAGS" != "" ]; then
+		compile_config_str="LDFLAGS=\"$LDFLAGS\"\n$compile_config_str"
+	fi
+
+	if [ $indev -eq 1 ]; then
+		src="$src $src_indev"
+	fi
+
+	printf "$compile_config_str\n$install_config_str\n" > ./.config
+	printf "main_project=\"$main_project\"\n\n" >> ./.config
+
+	if [ -f ./custom.conf ]; then
+		cat custom.conf >> ./.config
+	fi
+}
+
+update_prefixes
+
+while [ $# -ne 0 ]; do
+	case $1 in
+		--prefix | --prefix=*)
+			if [ $(echo $1 | grep "=" -c) -ne 0 ]; then
+				prefix="$(echo $1 | cut -d= -f2)"
+			else
+				prefix="$2"
+				shift
+			fi
+			update_prefixes
+			;;
+		--exec-prefix | --exec-prefix=*)
+			if [ $(echo $1 | grep "=" -c) -ne 0 ]; then
+				exec_prefix="$(echo $1 | cut -d= -f2)"
+			else
+				exec_prefix="$2"
+				shift
+			fi
+			update_prefixes exec
+			;;
+		--bindir | --bindir=*)
+			if [ $(echo $1 | grep "=" -c) -ne 0 ]; then
+				bindir="$(echo $1 | cut -d= -f2)"
+			else
+				bindir="$2"
+				shift
+			fi
+			;;
+		--libdir | --libdir=*)
+			if [ $(echo $1 | grep "=" -c) -ne 0 ]; then
+				libdir="$(echo $1 | cut -d= -f2)"
+			else
+				libdir="$2"
+				shift
+			fi
+			;;
+		--includedir | --includedir=*)
+			if [ $(echo $1 | grep "=" -c) -ne 0 ]; then
+				includedir="$(echo $1 | cut -d= -f2)"
+			else
+				includedir="$2"
+				shift
+			fi
+			;;
+		--target | --target=*)
+			if [ $(echo $1 | grep "=" -c) -ne 0 ]; then
+				target="$(echo $1 | cut -d= -f2)"
+			else
+				target="$2"
+				shift
+			fi
+			;;
+		--enable-indev)
+			indev=1
+			;;
+		--enable-w*)
+			CFLAGS="$CFLAGS -Wall"
+
+			if [ "$1" = "--enable-wextra" ] || [ "$1" = "--enable-werror" ]; then
+				CFLAGS="$CFLAGS -Wextra"
+			fi
+
+			if [ "$1" = "--enable-werror" ]; then
+				CFLAGS="$CFLAGS -Werror"
+			fi
+			;;
+		--help | --*)
+			printf "PocketLinux32's Generic C99 Configure System v0.04\n\n"
+			printf "Usage: $0 [OPTIONS]...\n\n"
+			echo "Install Options"
+			echo "--prefix=DIR			Set install path (default=/usr/local)"
+			echo "--exec-prefix=DIR		Sets executable install path (default=prefix)"
+			echo "--bindir=DIR			Set binary install path (default=exec_prefix/bin)"
+			echo "--libdir=DIR			Set library install path (default=prefix/lib)"
+			echo "--includedir=DIR		Set include headers install path (default=prefix/include)"
+			printf "\nCompile Options\n"
+			echo "--target=TARGET			Set the target system"
+			echo "--enable-nonportable		Compile platform-specific modules/source files"
+			echo "--enable-indev			Compile incomplete modules/source files"
+			echo "--enable-wall			Compile with -Wall"
+			echo "--enable-wextra			Compile with -Wextra (enables -Wall)"
+			echo "--enable-werror			Compile with -Werror (enables -Wall -Wextra)"
+			printf "\nInfluential Environment Variables\n"
+			echo "  CC				C compiler"
+			echo "  CFLAGS			Flags passed to the C compiler"
+			echo "  LDFLAGS			FLags passed to the linker"
+			echo "  AR				Archival tool for creating static libraries"
+			echo "  RANLIB			Like AR, but indexes symbols in an AR archive"
+			exit 0
+			;;
+		CC=*)
+			CC=$(echo $1 | cut -d= -f2)
+			;;
+		CFLAGS=*)
+			CFLAGS="$CFLAGS $(echo $1 | cut -d= -f2-)"
+			;;
+		LDFLAGS=*)
+			LDFLAGS="$(echo $1 | cut -d= -f2-)"
+			;;
+		AR=*)
+			AR=$(echo $1 | cut -d= -f2)
+			;;
+		RANLIB=*)
+			RANLIB=$(echo $1 | cut -d= -f2)
+			;;
+	esac
+	shift
+done
+
+generate_config

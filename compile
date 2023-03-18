@@ -1,0 +1,161 @@
+#!/bin/sh
+set -e
+start_time=""
+end_time=""
+action="build_project"
+
+_compile_obj(){
+	extra_flag=""
+	printf "Compiling $1 ($2)..."
+	basename=$(echo $(basename $1) | cut -d. -f1)
+	if [ -f obj/$basename-$2.o ]; then
+		echo "Already Built."
+		return 0
+	else
+		if [ "$2" = "shared" ]; then
+			extra_flag="-fPIC"
+		fi
+
+		$CC -c $extra_flag -Iinclude $1 -o obj/$basename-$2.o $CFLAGS
+		echo "Done."
+	fi
+}
+
+_parse_projectstruct(){
+	libname=$(echo "$1" | cut -d'|' -f1)
+	libsrc=$(echo "$1" | cut -d'|' -f2 | sed 's/,/\ /g')
+	progs=$(echo "$1" | cut -d'|' -f3 | sed 's/,/\ /g')
+	srcdir=$(echo "$1" | cut -d'|' -f4)
+}
+
+_runtime_calc(){
+	set +e
+	case $1 in
+		start)
+			start_time="$(date +%s)"
+			printf "Operation started at $(date --date=@$start_time)\n\n"
+			;;
+		stop)
+			end_time="$(date +%s)"
+			runtime="$(expr $end_time - $start_time)"
+			hours="$(expr $runtime / 3600)"
+			minutes=0
+			printf "Operation took "
+
+			if [ $hours -ne 0 ]; then
+				printf "$hours hours"
+				runtime="$(expr $runtime - $(expr $hours '*' 3600))"
+				if [ $runtime -gt 60 ]; then
+					printf ", "
+				else
+					printf " and "
+				fi
+			fi
+			minutes="$(expr $runtime / 60)"
+
+			if [ $minutes -ne 0 ]; then
+				printf "$minutes minutes and "
+				runtime="$(expr $runtime - $(expr $minutes '*' 60))"
+			fi
+
+			echo "$runtime seconds to complete"
+			;;
+	esac
+	set -e
+}
+
+compile_static_lib(){
+	if [ "$srcdir" = "" ]; then
+		srcdir="src"
+	fi
+	mkdir obj -p
+
+	for i in $src; do
+		_compile_obj $srcdir/$i.c "static"
+	done
+	printf "Creating static library $1..."
+	$AR rc lib$libname.a $(find obj | grep static) 2>&1 >/dev/null
+	echo "Done."
+}
+
+compile_shared_lib(){
+	if [ "$srcdir" = "" ]; then
+		srcdir="src"
+	fi
+	mkdir obj -p
+
+	for i in $src; do
+		_compile_obj $srcdir/$i.c "shared"
+	done
+	printf "Creating shared library $1..."
+	$CC -shared $(find obj | grep shared) -o lib$libname.so $CFLAGS $LDFLAGS
+	echo "Done."
+	rm *.o -f
+}
+
+compile_progs(){
+	$CC -shared -x c /dev/null -o lib$libname.so
+	for i in $progs; do
+		printf "Compiling program $i..."
+		$CC $i.c -Iinclude -L. -l$libname $CFLAGS $LDFLAGS -o $i
+		echo "Done."
+	done
+}
+
+compile_lib(){
+	compile_static_lib
+	compile_shared_lib
+}
+
+build_project(){
+	compile_progs
+}
+
+install_lib(){
+	printf "Installing library $libname..."
+	for i in $(ls include | grep ".h"); do
+		cp include/$i "$prefix/include"
+	done
+	mv lib$libname.* "$prefix/lib"
+	echo "Done."
+}
+
+printf "PocketLinux32's Generic C Build System v0.01\n\n"
+
+case $1 in
+	clean)
+		rm obj *.out *.a *.so core* -rf
+		if [ "$2" = "fully" ]; then
+			rm .config
+		fi
+		echo "Project directory has been cleaned"
+		exit 0
+		;;
+	build)
+		action="build_project"
+		;;
+	install)
+		action="install_project"
+		;;
+	help)
+		echo "clean			Removes any files generated during compilation"
+		echo "build [action]	Compiles the library or the library testcase"
+		echo "install		Installs the compiled library to dest"
+		exit 0
+		;;
+esac
+
+if [ ! -f ".config" ]; then
+	echo "Error: You haven't configured the system yet! Please run ./configure --help and try again"
+	exit 1
+fi
+. ./.config
+
+echo "Compiler: $CC"
+echo "Compiler Flags: $CFLAGS"
+printf "Linker Flags: $LDFLAGS\n\n"
+
+_runtime_calc start
+_parse_projectstruct $main_project
+$action
+_runtime_calc stop
