@@ -2,7 +2,7 @@
 set -e
 start_time=""
 end_time=""
-action="build_project"
+action=""
 
 _compile_obj(){
 	extra_flag=""
@@ -22,10 +22,19 @@ _compile_obj(){
 }
 
 _parse_projectstruct(){
-	libname=$(echo "$1" | cut -d'|' -f1)
-	libsrc=$(echo "$1" | cut -d'|' -f2 | sed 's/,/\ /g')
-	progs=$(echo "$1" | cut -d'|' -f3 | sed 's/,/\ /g')
-	srcdir=$(echo "$1" | cut -d'|' -f4)
+	project_type=$(echo $1 | cut -d'|' -f1)
+	if [ "$project_type" = "lib" ]; then
+		libname=$(echo "$1" | cut -d'|' -f2)
+		libsrc=$(echo "$1" | cut -d'|' -f3 | sed 's/,/\ /g')
+		srcdir=$(echo "$1" | cut -d'|' -f4)
+	elif [ "$project_type" = "prog" ]; then
+		progname=$(echo "$1" | cut -d'|' -f2)
+		srcdir=$(echo "$1" | cut -d'|' -f3)
+	fi
+
+	if [ "$srcdir" = "" ]; then
+		srcdir="src"
+	fi
 }
 
 _runtime_calc(){
@@ -65,62 +74,82 @@ _runtime_calc(){
 }
 
 compile_static_lib(){
-	if [ "$srcdir" = "" ]; then
-		srcdir="src"
-	fi
 	mkdir obj -p
 
-	for i in $src; do
+	for i in $libsrc; do
 		_compile_obj $srcdir/$i.c "static"
 	done
-	printf "Creating static library $1..."
+	printf "Creating static library $libname..."
 	$AR rc lib$libname.a $(find obj | grep static) 2>&1 >/dev/null
 	echo "Done."
 }
 
 compile_shared_lib(){
-	if [ "$srcdir" = "" ]; then
-		srcdir="src"
-	fi
 	mkdir obj -p
 
-	for i in $src; do
+	for i in $libsrc; do
 		_compile_obj $srcdir/$i.c "shared"
 	done
-	printf "Creating shared library $1..."
+	printf "Creating shared library $libname..."
 	$CC -shared $(find obj | grep shared) -o lib$libname.so $CFLAGS $LDFLAGS
 	echo "Done."
 	rm *.o -f
 }
 
-compile_progs(){
-	$CC -shared -x c /dev/null -o lib$libname.so
-	for i in $progs; do
-		printf "Compiling program $i..."
-		$CC $i.c -Iinclude -L. -l$libname $CFLAGS $LDFLAGS -o $i
-		echo "Done."
-	done
-}
-
-compile_lib(){
-	compile_static_lib
-	compile_shared_lib
-}
-
-build_project(){
-	compile_progs
+compile_prog(){
+	printf "Compiling program $prog_name..."
+	$CC $progname.c -Iinclude -L. -l$libname $CFLAGS $LDFLAGS -o $progname
+	echo "Done."
 }
 
 install_lib(){
 	printf "Installing library $libname..."
 	for i in $(ls include | grep ".h"); do
-		cp include/$i "$prefix/include"
+		cp include/$i "$includedir"
 	done
-	mv lib$libname.* "$prefix/lib"
+	mv lib$libname.* "$libdir"
 	echo "Done."
 }
 
-printf "PocketLinux32's Generic C Build System v0.01\n\n"
+install_prog(){
+	printf "Installing program $progname..."
+	mv $progname "$bindir"
+	echo "Done."
+}
+
+build_project(){
+	if [ "$2" = "" ]; then
+		internal_action="libprog"
+	else
+		internal_action="$2"
+	fi
+
+	if [ $(echo $internal_action | grep "lib" -c) -ne 0 ]; then
+		if [ "$3" = "" ]; then
+			internal_lib_action="shared-static"
+		else
+			internal_lib_action="$3"
+		fi
+
+		if [ $(echo $internal_lib_action | grep "static" -c) -ne 0 ]; then
+			compile_static_lib
+		fi
+
+		if [ $(echo $internal_lib_action | grep "shared" -c) -ne 0 ]; then
+			compile_shared_lib
+		fi
+	fi
+
+	if [ $(echo $internal_action | grep "prog" -c) -ne 0 ]; then
+		compile_prog
+	fi
+}
+
+printf "PocketLinux32's Generic C Build System v0.02\n\n"
+
+if [ $# -lt 1 ]; then
+	echo "Error: Not enough arguments"
+fi
 
 case $1 in
 	clean)
@@ -156,6 +185,8 @@ echo "Compiler Flags: $CFLAGS"
 printf "Linker Flags: $LDFLAGS\n\n"
 
 _runtime_calc start
-_parse_projectstruct $main_project
-$action
+for i in $main_project; do
+	_parse_projectstruct $i
+	$action $2 $3
+done
 _runtime_calc stop

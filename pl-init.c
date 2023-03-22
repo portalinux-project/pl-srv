@@ -1,15 +1,9 @@
 /******************************************************\
- pl-srv, v0.01
+ pl-srv, v0.02
  (c) 2023 pocketlinux32, Under MPLv2.0
  pl-init.c: Initializes the system enough to run pl-srv
 \******************************************************/
-#define _XOPEN_SOURCE 700
-#include <pl32.h>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <libsrv.h>
 
 // Linux-specific headers
 #include <sys/mount.h>
@@ -17,23 +11,7 @@
 
 bool inChroot = false;
 
-int spawnExec(string_t path, string_t* args){
-	pid_t exec = fork();
-	int status;
-	if(exec == 0){
-		sleep(1);
-		char buffer[256];
-		execv(realpath(path, buffer), args);
-
-		perror("execv");
-		exit(1);
-	}else{
-		waitpid(exec, &status, 0);
-	}
-	return status;
-}
-
-void signalHandler(int signal){
+void initSignalHandler(int signal){
 	string_t plSrvArgs[3] = { "pl-srv", "halt", NULL };
 	spawnExec("/usr/bin/pl-srv", plSrvArgs);
 
@@ -58,13 +36,6 @@ void signalHandler(int signal){
 			puts("* Powering off...");
 			reboot(RB_POWER_OFF);
 	}
-}
-
-void setSignal(int signal, struct sigaction* newHandler){
-	struct sigaction oldHandler;
-	sigaction(signal, NULL, &oldHandler);
-	if(oldHandler.sa_handler != SIG_IGN)
-		sigaction(signal, newHandler, NULL);
 }
 
 int safeMountBoot(string_t dest, string_t fstype){
@@ -136,8 +107,6 @@ int main(int argc, string_t argv[]){
 		fputs("* Enabling signal handler: ", stdout);
 		struct sigaction newSigAction;
 		newSigAction.sa_handler = signalHandler;
-		sigemptyset(&newSigAction.sa_mask);
-		newSigAction.sa_flags = 0;
 
 		setSignal(SIGPWR, &newSigAction);
 		setSignal(SIGTERM, &newSigAction);
