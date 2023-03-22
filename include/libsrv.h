@@ -18,6 +18,14 @@
 #define PLSRV_START 3
 #define PLSRV_STOP 4
 
+typedef struct plsrv {
+	string_t path;
+	string_t* args;
+	bool respawn;
+	bool background;
+} plsrv_t;
+
+void signalHandler(int signal);
 void setSignal(int signal, struct sigaction* newHandler);
 pid_t getActivePid();
 int spawnExec(string_t path, string_t* args);

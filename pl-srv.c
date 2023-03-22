@@ -5,14 +5,7 @@
 \*****************************************/
 #include <libsrv.h>
 
-typedef struct plsrv {
-	string_t path;
-	string_t* args;
-	bool respawn;
-	bool background;
-} plsrv_t;
-
-void supervisorSignalHandler(int signal){
+void signalHandler(int signal){
 	pid_t activePid = getActivePid();
 
 	if(activePid != 0){
