@@ -30,4 +30,6 @@ void setSignal(int signal, struct sigaction* newHandler);
 pid_t getActivePid();
 int spawnExec(string_t path, string_t* args);
 plsrv_t* generateServiceStruct(string_t pathname, plmt_t* mt);
+void plSrvErrorNoRet(char* string);
+void plSrvInfraTest(int mode, char* string);
 int plSrvSystemctl(int action, char* value, plmt_t* mt);

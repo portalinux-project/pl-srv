@@ -7,14 +7,17 @@
 
 pid_t activePid = 0;
 
-void setSignal(int signal, struct sigaction* newHandler){
-	sigemptyset(&newSigAction.sa_mask);
-	newSigAction.sa_flags = 0;
-
+void setSignal(int signal){
 	struct sigaction oldHandler;
+	struct sigaction newHandler;
+
+	newHandler.sa_handler = signalHandler;
+	sigemptyset(&newHandler.sa_mask);
+	newHandler.sa_flags = 0;
+
 	sigaction(signal, NULL, &oldHandler);
 	if(oldHandler.sa_handler != SIG_IGN)
-		sigaction(signal, newHandler, NULL);
+		sigaction(signal, &newHandler, NULL);
 }
 
 pid_t getActivePid(){
@@ -38,7 +41,7 @@ int spawnExec(string_t path, string_t* args){
 	return status;
 }
 
-int executeSupervisor(plsrv_t* service, struct sigaction* signalHandler){
+int executeSupervisor(plsrv_t* service){
 	if(service == NULL)
 		return -1;
 
@@ -52,8 +55,8 @@ int executeSupervisor(plsrv_t* service, struct sigaction* signalHandler){
 			freopen("/dev/null", "w", stdout);
 		}
 
-		setSignal(SIGTERM, signalHandler);
-		setSignal(SIGINT, signalHandler);
+		setSignalHandler(SIGTERM);
+		setSignalHandler(SIGINT);
 
 		spawnExec(service->path, service->args);
 		if(service->respawn == true){
@@ -114,23 +117,40 @@ plsrv_t* generateServiceStruct(string_t pathname, plmt_t* mt){
 	return returnStruct;
 }
 
-void plSrvInfraTest(char* ){
-	
+void plSrvErrNoRet(char* string, bool perrorFlag){
+	if(perrorFlags)
+		perror(string);
+	else
+		puts(string);
+	exit(1);
 }
 
-int plSrvStartStop(int action, char* value, plmt_t* mt){
+void plSrvInfraTest(int mode, char* string){
+	struct stat srvDir;
+	struct stat logDir;
+	int successStat[2] = { stat("/etc/pl-srv", &srvDir), stat("/var/pl-srv", &logDir) };
+
+	if(successStat[0] == -1 || successStat[1] == -1)
+		plSrvErrorNoRet("* Infrastructure test failure", true);
+	else if(!S_ISDIR(srvDir->st_mode) || !S_ISDIR(logDir->st_mode))
+		plSrvErrorNoRet("* Infrastructure test failure: Not a directory", false);
+}
+
+int plSrvStartStop(int action, char* service, plmt_t* mt){
 	struct sigaction sigAction;
 	newSigAction.sa_handler = supervisorSignalHandler;
 
-	struct stat checkExistence;
 }
 
-int plSrvInitHalt(int action, char* value, plmt_t* mt){
+int plSrvInitHalt(int action, plmt_t* mt){
 	DIR* directory;
 	struct dirent directoryEntry;
 }
 
 int plSrvSystemctl(int action, char* value, plmt_t* mt){
+	plSrvInfraTest(action, service);
+
+
 	char* fullPath = NULL;
 	struct stat checkExistence;
 
@@ -152,7 +172,7 @@ int plSrvSystemctl(int action, char* value, plmt_t* mt){
 			printf("* Starting service %s...\n", value);
 
 			if(stat(fullPath, &checkExistence) == -1){
-				perror("plSrvSystemctl");
+				perror("* Error opening file");
 				return 1;
 			}
 

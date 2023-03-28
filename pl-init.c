@@ -11,7 +11,7 @@
 
 bool inChroot = false;
 
-void initSignalHandler(int signal){
+void signalHandler(int signal){
 	string_t plSrvArgs[3] = { "pl-srv", "halt", NULL };
 	spawnExec("/usr/bin/pl-srv", plSrvArgs);
 
@@ -105,14 +105,12 @@ int main(int argc, string_t argv[]){
 		safeMountBoot("/dev", "devtmpfs");
 
 		fputs("* Enabling signal handler: ", stdout);
-		struct sigaction newSigAction;
-		newSigAction.sa_handler = signalHandler;
 
-		setSignal(SIGPWR, &newSigAction);
-		setSignal(SIGTERM, &newSigAction);
-		setSignal(SIGINT, &newSigAction);
-		setSignal(SIGUSR1, &newSigAction);
-		setSignal(SIGUSR2, &newSigAction);
+		setSignal(SIGPWR);
+		setSignal(SIGTERM);
+		setSignal(SIGINT);
+		setSignal(SIGUSR1);
+		setSignal(SIGUSR2);
 		puts("Done.");
 
 		puts("* Running pl-srv...\n");
