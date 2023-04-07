@@ -5,6 +5,10 @@
 \******************************************/
 #include <libsrv.h>
 
+typedef struct plstat {
+
+} plstat_t;
+
 pid_t activePid = 0;
 
 void setSignal(int signal){
@@ -46,17 +50,20 @@ int executeSupervisor(plsrv_t* service){
 		return -1;
 
 	pid_t exec = 0;
-	if(service->respawn == true || service->background == true)
+	bool isForked = (service->respawn || service->background)
+	if(isForked)
 		exec = fork();
 
 	if(exec == 0){
-		if(service->background == true){
+		if(isForked){
+			setSignal(SIGTERM);
+			setSignal(SIGINT);
+		}
+
+		if(service->background){
 			freopen("/dev/null", "w", stdin);
 			freopen("/dev/null", "w", stdout);
 		}
-
-		setSignalHandler(SIGTERM);
-		setSignalHandler(SIGINT);
 
 		spawnExec(service->path, service->args);
 		if(service->respawn == true){
@@ -70,17 +77,13 @@ int executeSupervisor(plsrv_t* service){
 	return exec;
 }
 
-plsrv_t* generateServiceStruct(string_t pathname, plmt_t* mt){
+plsrv_t* generateServiceStruct(plfile_t* srvFile, plmt_t* mt){
 	if(pathname == NULL || mt == NULL)
 		return NULL;
 
-	plfile_t* srvFile = plFOpen(pathname, "r", mt);
 	plsrv_t* returnStruct = plMTAllocE(mt, sizeof(plsrv_t));
 	returnStruct->respawn = false;
 	returnStruct->background = false;
-
-	if(srvFile == NULL)
-		return NULL;
 
 	byte_t buffer[256] = "";
 	while(plFGets(buffer, 256, srvFile) != NULL){
@@ -125,7 +128,7 @@ void plSrvErrNoRet(char* string, bool perrorFlag){
 	exit(1);
 }
 
-void plSrvInfraTest(int mode, char* string){
+plfile_t* plSrvOpenFile(int mode, char* string){
 	struct stat srvDir;
 	struct stat logDir;
 	int successStat[2] = { stat("/etc/pl-srv", &srvDir), stat("/var/pl-srv", &logDir) };
@@ -134,48 +137,13 @@ void plSrvInfraTest(int mode, char* string){
 		plSrvErrorNoRet("* Infrastructure test failure", true);
 	else if(!S_ISDIR(srvDir->st_mode) || !S_ISDIR(logDir->st_mode))
 		plSrvErrorNoRet("* Infrastructure test failure: Not a directory", false);
+	
 }
 
 int plSrvStartStop(int action, char* service, plmt_t* mt){
-	struct sigaction sigAction;
-	newSigAction.sa_handler = supervisorSignalHandler;
-
-}
-
-int plSrvInitHalt(int action, plmt_t* mt){
-	DIR* directory;
-	struct dirent directoryEntry;
-}
-
-int plSrvSystemctl(int action, char* value, plmt_t* mt){
-	plSrvInfraTest(action, service);
-
-
-	char* fullPath = NULL;
-	struct stat checkExistence;
-
-	if(action == PLSRV_START || action == PLSRV_STOP){
-		fullPath = plMTAllocE(mt, (18 + strlen(value)) * sizeof(char));
-		if(action == PLSRV_START)
-			strcpy(fullPath, "/etc");
-		else
-			strcpy(fullPath, "/var");
-
-		strcat(fullPath, "/pl-srv/");
-
-		strcat(fullPath, value);
-		strcat(fullPath, ".srv");
-	}
-
 	switch(action){
 		case PLSRV_START: ;
 			printf("* Starting service %s...\n", value);
-
-			if(stat(fullPath, &checkExistence) == -1){
-				perror("* Error opening file");
-				return 1;
-			}
-
 			plsrv_t* srvStruct = generateServiceStruct(fullPath, mt);
 			int servicePid = executeSupervisor(srvStruct);
 			if(servicePid > 0){
@@ -191,6 +159,34 @@ int plSrvSystemctl(int action, char* value, plmt_t* mt){
 				return 2;
 			}
 			break;
+
+			break;
+		case PLSRV_STOP: ;
+			break;
+	}
+}
+
+int plSrvInitHalt(int action, plmt_t* mt){
+	DIR* directory;
+	struct dirent directoryEntry;
+}
+
+int plSrvSystemctl(int action, char* value, plmt_t* mt){
+	if(action == PLSRV_START || action == PLSRV_STOP){
+		fullPath = plMTAllocE(mt, (18 + strlen(value)) * sizeof(char));
+		if(action == PLSRV_START)
+			strcpy(fullPath, "/etc");
+		else
+			strcpy(fullPath, "/var");
+
+		strcat(fullPath, "/pl-srv/");
+
+		strcat(fullPath, value);
+		strcat(fullPath, ".srv");
+	}
+
+	switch(action){
+		case PLSRV_START: ;
 		case PLSRV_STOP: ;
 			printf("* Stopping service %s...\n", value);
 
