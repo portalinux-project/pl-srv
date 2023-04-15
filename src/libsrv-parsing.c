@@ -5,8 +5,8 @@
 \***********************************************************************/
 #include <libsrv.h>
 
-plsrv_t* generateServiceStruct(plfile_t* srvFile, plmt_t* mt){
-	if(pathname == NULL || mt == NULL)
+plsrv_t* plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
+	if(srvFile == NULL || mt == NULL)
 		return NULL;
 
 	plsrv_t* returnStruct = plMTAllocE(mt, sizeof(plsrv_t));

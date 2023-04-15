@@ -19,10 +19,6 @@ void setSignal(int signal){
 		sigaction(signal, &newHandler, NULL);
 }
 
-pid_t getActivePid(){
-	return activePid;
-}
-
 int spawnExec(string_t path, string_t* args){
 	pid_t exec = fork();
 	int status;
@@ -40,12 +36,16 @@ int spawnExec(string_t path, string_t* args){
 	return status;
 }
 
-int executeSupervisor(plsrv_t* service){
+pid_t plSrvGetActivePid(){
+	return activePid;
+}
+
+int plSrvExecuteSupervisor(plsrv_t* service){
 	if(service == NULL)
 		return -1;
 
 	pid_t exec = 0;
-	bool isForked = (service->respawn || service->background)
+	bool isForked = (service->respawn || service->background);
 	if(isForked)
 		exec = fork();
 

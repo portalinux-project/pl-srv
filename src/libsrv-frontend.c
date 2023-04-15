@@ -9,11 +9,13 @@ int plSrvStartStop(int action, char* service, plmt_t* mt){
 	switch(action){
 		case PLSRV_START: ;
 			printf("* Starting service %s...\n", value);
+
 			plsrv_t* srvStruct = generateServiceStruct(fullPath, mt);
 			int servicePid = executeSupervisor(srvStruct);
+
 			if(servicePid > 0){
 				strncpy(fullPath, "/var", 4);
-				plfile_t* lockFile = plFOpen(fullPath, "w", mt);
+				plfile_t* lockFile = plSrvSafeOpen(fullPath, "w", mt);
 				char numberBuffer[16];
 				snprintf(numberBuffer, 16, "%d", servicePid);
 				plFPuts(numberBuffer, lockFile);
@@ -24,28 +26,8 @@ int plSrvStartStop(int action, char* service, plmt_t* mt){
 				return 2;
 			}
 			break;
-
-			break;
-		case PLSRV_STOP: ;
-			break;
-	}
-}
-
-int plSrvInitHalt(int action, plmt_t* mt){
-	DIR* directory;
-	struct dirent directoryEntry;
-}
-
-int plSrvSystemctl(int action, char* value, plmt_t* mt){
-	switch(action){
-		case PLSRV_START: ;
 		case PLSRV_STOP: ;
 			printf("* Stopping service %s...\n", value);
-
-			if(stat(fullPath, &checkExistence) == -1){
-				perror("plSrvSystemctl");
-				return 1;
-			}
 
 			plfile_t* lockFile = plFOpen(fullPath, "r", mt);
 			char numBuffer[16] = "";
@@ -57,36 +39,26 @@ int plSrvSystemctl(int action, char* value, plmt_t* mt){
 			plFClose(lockFile);
 			remove(fullPath);
 			break;
-		case PLSRV_INIT: ;
-			DIR* directorySrv = opendir("/etc/pl-srv");
-			struct dirent* dirEntriesSrv;
-
-			if(directorySrv == NULL){
-				puts("Error: Service directory not found");
-				return 3;
-			}
-
-			readdir(directorySrv);
-			readdir(directorySrv);
-			while((dirEntriesSrv = readdir(directorySrv)) != NULL){
-				plSrvSystemctl(PLSRV_START, strtok(dirEntriesSrv->d_name, "."), mt);
-			}
-			break;
-		case PLSRV_HALT: ;
-			DIR* directoryActive = opendir("/var/pl-srv");
-			struct dirent* dirEntriesActive;
-
-			if(directorySrv == NULL){
-				puts("Error: Service directory not found");
-				return 3;
-			}
-
-			readdir(directory);
-			readdir(directory);
-			while((dirEntriesActive = readdir(directoryActive)) != NULL){
-				plSrvSystemctl(PLSRV_STOP, strtok(dirEntriesActive->d_name, "."), mt);
-			}
-			break;
 	}
-	return 0;
+}
+
+void plSrvInitHalt(int action, plmt_t* mt){
+	DIR* directory;
+	struct dirent directoryEntry;
+	int mode;
+
+	if(action == PLSRV_INIT){
+		directory = opendir("/etc/pl-srv");
+		mode = PLSRV_START;
+	}else{
+		directory = opendir("/var/pl-srv");
+		mode = PLSRV_STOP;
+	}
+
+	readdir(directory);
+	readdir(directory);
+
+	while((directoryEntry = readdir(directory)) != NULL){
+		plSrvStartStop(mode, directoryEntry->d_name, mt);
+	}
 }

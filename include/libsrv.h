@@ -26,10 +26,16 @@ typedef struct plsrv {
 } plsrv_t;
 
 void signalHandler(int signal);
-void setSignal(int signal, struct sigaction* newHandler);
-pid_t getActivePid();
+void setSignal(int signal);
 int spawnExec(string_t path, string_t* args);
-plsrv_t* generateServiceStruct(string_t pathname, plmt_t* mt);
-void plSrvErrorNoRet(char* string);
-void plSrvInfraTest(int mode, char* string);
-int plSrvSystemctl(int action, char* value, plmt_t* mt);
+pid_t plSrvGetActivePid();
+int plSrvExecuteSupervisor(plsrv_t* service);
+
+void plSrvErrorNoRet(char* string, bool usePerror, bool developerBug);
+void plStat(char* path, struct stat* statStruct);
+void plSrvInfraTest();
+plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt);
+
+plsrv_t* plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt);
+int plSrvStartStop(int action, char* value, plmt_t* mt);
+void plSrvInitHalt(int action, plmt_t* mt);
