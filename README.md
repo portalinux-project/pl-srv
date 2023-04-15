@@ -1,2 +1,29 @@
 # pl-srv
-The PortaLinux init system and service supervisor
+`pl-srv` or the PortaLinux Init System package is a very tiny init system made
+specifically for the PortaLinux operating system. It is written in C99 using
+POSIX calls and the ESB/PortaLinux API. The only component with Linux-specific
+system calls is `pl-init` and it's only used to shut down/restart the system.
+
+# Components
+
+The `pl-srv` init system package consists of the following components:
+
+- `libsrv`: A library containing most of the functionality of the `pl-srv` and
+`pl-init` programs. It is entirely written using POSIX and ESB/PL-API calls, 
+and thus is completely portable and can be compiled and ran on any operating
+system that fully implements the POSIX.1-2008 API.
+
+- `pl-init`: A minimal PID 1 program meant to have as little functionality as
+possible. Its main purpose is to make the system not crash, even if everything
+else does. It only starts up the `pl-srv` service supervisor in init mode and
+then gets stuck in an empty no-op loop. This is the only Linux-specific
+component of the `pl-srv` package
+
+- `pl-srv`: A simple service supervisor with a small footprint. This is the
+main program of this package. It only makes calls to `libsrv`, which means it
+is portable and can run on anything `libsrv` runs on.
+
+# Contributions
+
+I do plan on accepting contributions to the project once it gets to its 1.0
+release, but currently, no contributions are not being accepted.
