@@ -24,6 +24,16 @@ void plStat(char* path, struct stat* statStruct){
 		plSrvErrorNoRet("* Infrastructure test failure", true, false);
 }
 
+long plSafeStrtonum(char* buffer){
+	char* pointerHolder;
+	long retNum = strtol(buffer, &pointerHolder, 10);
+
+	if(pointerHolder != NULL && *pointerHolder != '\0')
+		plSrvErrorNoRet("* plSafeStrtonum: Buffer was not a number", false, true);
+
+	return retNum;
+}
+
 void plSrvInfraTest(){
 	struct stat srvDir;
 	struct stat logDir;
@@ -39,16 +49,32 @@ plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt){
 		plSrvErrNoRet("* plSrvSafeOpen: NULL was passed as an argument", false, true);
 
 	char curPath[256] = "";
+	char fileMode[3] = "r+";
 	getcwd(curPath, 256);
 
 	if(mode == PLSRV_START)
 		chdir("/etc/pl-srv");
-	else
+	else{
 		chdir("/var/pl-srv");
+		if(mode == PLSRV_START_LOCK)
+			fileMode[0] = 'w';
+	}
 
-	plfile_t* retFile = plFOpen(string, NULL, mt);
+	plfile_t* retFile = plFOpen(string, fileMode, mt);
 	if(!retFile)
-		plSrvErrorNoRet("* Error opening file", true, false);
+		plSrvErrNoRet("* Error opening file", true, false);
 
+	chdir(curPath);
 	return retFile;
+}
+
+void plSrvRemoveLock(char* service){
+	char curPath[256] = "";
+	getcwd(curPath, 256);
+
+	chdir("/var/pl-srv");
+	int retVal = remove(service);
+
+	if(retVal == -1)
+		plSrvErrNoRet("* Error removing lock file", true, false);
 }

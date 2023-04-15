@@ -6,45 +6,50 @@
 #include <libsrv.h>
 
 int plSrvStartStop(int action, char* service, plmt_t* mt){
+	plfile_t* srvFile = plSrvSafeOpen(PLSRV_START, service, mt);
+	plfile_t* lockFile;
+
 	switch(action){
 		case PLSRV_START: ;
-			printf("* Starting service %s...\n", value);
+			printf("* Starting service %s...\n", service);
 
-			plsrv_t* srvStruct = generateServiceStruct(fullPath, mt);
-			int servicePid = executeSupervisor(srvStruct);
+			lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
+			plsrv_t* srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
+			int servicePid = plSrvExecuteSupervisor(srvStruct);
 
 			if(servicePid > 0){
-				strncpy(fullPath, "/var", 4);
-				plfile_t* lockFile = plSrvSafeOpen(fullPath, "w", mt);
 				char numberBuffer[16];
 				snprintf(numberBuffer, 16, "%d", servicePid);
 				plFPuts(numberBuffer, lockFile);
 				plFClose(lockFile);
-				return 0;
 			}else if(servicePid == -1){
-				printf("* Error: Failed to start service %s", value);
+				printf("* Error: Failed to start service %s", service);
 				return 2;
 			}
 			break;
 		case PLSRV_STOP: ;
-			printf("* Stopping service %s...\n", value);
+			printf("* Stopping service %s...\n", service);
 
-			plfile_t* lockFile = plFOpen(fullPath, "r", mt);
+			lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
 			char numBuffer[16] = "";
 			char* pointerHolder;
 			pid_t pidNum;
+
 			plFGets(numBuffer, 16, lockFile);
-			pidNum = strtol(numBuffer, &pointerHolder, 10);
+			pidNum = plSafeStrtonum(numBuffer);
+
 			kill(pidNum, SIGTERM);
 			plFClose(lockFile);
-			remove(fullPath);
+			plSrvRemoveLock(service);
 			break;
 	}
+
+	return 0;
 }
 
 void plSrvInitHalt(int action, plmt_t* mt){
 	DIR* directory;
-	struct dirent directoryEntry;
+	struct dirent* directoryEntry;
 	int mode;
 
 	if(action == PLSRV_INIT){

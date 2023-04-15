@@ -17,6 +17,7 @@
 #define PLSRV_HALT 2
 #define PLSRV_START 3
 #define PLSRV_STOP 4
+#define PLSRV_START_LOCK 5
 
 typedef struct plsrv {
 	string_t path;
@@ -33,8 +34,10 @@ int plSrvExecuteSupervisor(plsrv_t* service);
 
 void plSrvErrorNoRet(char* string, bool usePerror, bool developerBug);
 void plStat(char* path, struct stat* statStruct);
+long plSafeStrtonum(char* buffer);
 void plSrvInfraTest();
 plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt);
+void plSrvRemoveLock(char* buffer);
 
 plsrv_t* plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt);
 int plSrvStartStop(int action, char* value, plmt_t* mt);
