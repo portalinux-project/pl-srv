@@ -5,7 +5,7 @@
 \***************************************************************/
 #include <libsrv.h>
 
-void plSrvErrNoRet(char* string, bool usePerror, bool developerBug){
+void plSrvErrorNoRet(char* string, bool usePerror, bool developerBug){
 	if(usePerror)
 		perror(string);
 	else
@@ -46,7 +46,7 @@ void plSrvInfraTest(){
 
 plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt){
 	if(!string || !mt)
-		plSrvErrNoRet("* plSrvSafeOpen: NULL was passed as an argument", false, true);
+		plSrvErrorNoRet("* plSrvSafeOpen: NULL was passed as an argument", false, true);
 
 	char curPath[256] = "";
 	char fileMode[3] = "r+";
@@ -62,7 +62,7 @@ plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt){
 
 	plfile_t* retFile = plFOpen(string, fileMode, mt);
 	if(!retFile)
-		plSrvErrNoRet("* Error opening file", true, false);
+		plSrvErrorNoRet("* Error opening file", true, false);
 
 	chdir(curPath);
 	return retFile;
@@ -76,5 +76,5 @@ void plSrvRemoveLock(char* service){
 	int retVal = remove(service);
 
 	if(retVal == -1)
-		plSrvErrNoRet("* Error removing lock file", true, false);
+		plSrvErrorNoRet("* Error removing lock file", true, false);
 }

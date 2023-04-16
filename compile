@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
+parser_skip=0
 start_time=""
 end_time=""
 action=""
+lib_projectstruct=""
+exec_projectstruct=""
 
 _compile_obj(){
 	extra_flag=""
@@ -23,11 +26,12 @@ _compile_obj(){
 
 _parse_projectstruct(){
 	project_type=$(echo $1 | cut -d'|' -f1)
+
 	if [ "$project_type" = "lib" ]; then
 		libname=$(echo "$1" | cut -d'|' -f2)
 		libsrc=$(echo "$1" | cut -d'|' -f3 | sed 's/,/\ /g')
 		srcdir=$(echo "$1" | cut -d'|' -f4)
-	elif [ "$project_type" = "prog" ]; then
+	elif [ "$project_type" = "exec" ]; then
 		progname=$(echo "$1" | cut -d'|' -f2)
 		srcdir=$(echo "$1" | cut -d'|' -f3)
 	fi
@@ -97,7 +101,7 @@ compile_shared_lib(){
 }
 
 compile_prog(){
-	printf "Compiling program $prog_name..."
+	printf "Compiling program $progname..."
 	$CC $progname.c -Iinclude -L. -l$libname $CFLAGS $LDFLAGS -o $progname
 	echo "Done."
 }
@@ -118,17 +122,21 @@ install_prog(){
 }
 
 build_project(){
-	if [ "$2" = "" ]; then
-		internal_action="libprog"
-	else
-		internal_action="$2"
+	if [ $parser_skip -ne 0 ]; then
+		return
 	fi
 
-	if [ $(echo $internal_action | grep "lib" -c) -ne 0 ]; then
-		if [ "$3" = "" ]; then
+	if [ "$1" = "" ]; then
+		internal_action="lib"
+	else
+		internal_action="$1"
+	fi
+
+	if [ $internal_action = "lib" ]; then
+		if [ "$2" = "" ]; then
 			internal_lib_action="shared-static"
 		else
-			internal_lib_action="$3"
+			internal_lib_action="$2"
 		fi
 
 		if [ $(echo $internal_lib_action | grep "static" -c) -ne 0 ]; then
@@ -140,7 +148,7 @@ build_project(){
 		fi
 	fi
 
-	if [ $(echo $internal_action | grep "prog" -c) -ne 0 ]; then
+	if [ $internal_action = "prog" ]; then
 		compile_prog
 	fi
 }
@@ -149,6 +157,7 @@ printf "PocketLinux32's Generic C Build System v0.02\n\n"
 
 if [ $# -lt 1 ]; then
 	echo "Error: Not enough arguments"
+	exit
 fi
 
 case $1 in
@@ -186,7 +195,31 @@ printf "Linker Flags: $LDFLAGS\n\n"
 
 _runtime_calc start
 for i in $main_project; do
-	_parse_projectstruct $i
-	$action $2 $3
+	project_type=$(echo $i | cut -d'|' -f1)
+
+	if [ "$project_type" = "lib" ]; then
+		if [ "$lib_projectstruct" = "" ]; then
+			lib_projectstruct="$i"
+		else
+			lib_projectstruct="$lib_projectstruct $i"
+		fi
+	elif [ "$project_type" = "exec" ]; then
+		if [ "$exec_projectstruct" = "" ]; then
+			exec_projectstruct="$i"
+		else
+			exec_projectstruct="$exec_projectstruct $i"
+		fi
+	fi
 done
+
+for i in $lib_projectstruct; do
+	_parse_projectstruct $i
+	$action lib $3
+done
+
+for i in $exec_projectstruct; do
+	_parse_projectstruct $i
+	$action prog
+done
+
 _runtime_calc stop

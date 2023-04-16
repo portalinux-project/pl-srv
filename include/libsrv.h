@@ -40,5 +40,5 @@ plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt);
 void plSrvRemoveLock(char* buffer);
 
 plsrv_t* plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt);
-int plSrvStartStop(int action, char* value, plmt_t* mt);
+int plSrvStartStop(int action, char* service, plmt_t* mt);
 void plSrvInitHalt(int action, plmt_t* mt);

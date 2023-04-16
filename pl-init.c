@@ -63,7 +63,7 @@ int safeMountBoot(string_t dest, string_t fstype){
 int main(int argc, string_t argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
-	puts("PortaLinux Init v0.01");
+	puts("PortaLinux Init v0.02");
 	puts("(c) 2023 pocketlinux32, Under MPLv2.0\n");
 
 	// Argument parsing
@@ -74,7 +74,7 @@ int main(int argc, string_t argv[]){
 				puts("Initializes a PortaLinux System enough to run the pl-srv process supervisor.");
 				puts("When ran in normal mode, it must be ran as PID 1 and by root");
 				puts("--help		Shows this help");
-				puts("--chroot		Run in chroot mode");
+				puts("--chroot	Run in chroot mode");
 				return 0;
 			}else if(strcmp(argv[i], "--chroot") == 0){
 				puts("* Running in chroot mode!");
