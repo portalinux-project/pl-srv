@@ -8,7 +8,7 @@
 void signalHandler(int signal){
 	pid_t activePid = plSrvGetActivePid();
 
-	if(activePid != 0){
+	if(activePid > 1){
 		switch(signal){
 			case SIGTERM: ;
 			case SIGINT: ;

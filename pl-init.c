@@ -24,17 +24,15 @@ void signalHandler(int signal){
 	puts("Done.");
 
 	switch(signal){
-		case SIGTERM: ;
-			puts("* Rebooting...");
-			reboot(RB_AUTOBOOT);
-		case SIGINT: ;
-		case SIGUSR1: ;
-			puts("* Halting system...");
-			reboot(RB_HALT_SYSTEM);
-		case SIGPWR: ;
 		case SIGUSR2: ;
 			puts("* Powering off...");
 			reboot(RB_POWER_OFF);
+		case SIGUSR1: ;
+			puts("* Halting system...");
+			reboot(RB_HALT_SYSTEM);
+		case SIGTERM: ;
+			puts("* Rebooting...");
+			reboot(RB_AUTOBOOT);
 	}
 }
 
@@ -116,8 +114,7 @@ int main(int argc, string_t argv[]){
 		puts("* Running pl-srv...\n");
 		string_t plSrvArgs[5] = { "pl-srv", "init", NULL };
 		spawnExec("/usr/bin/pl-srv", plSrvArgs);
-		while(1);
-	}
 
-	signalHandler(SIGTERM);
+		while(true);
+	}
 }

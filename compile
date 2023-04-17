@@ -122,10 +122,6 @@ install_prog(){
 }
 
 build_project(){
-	if [ $parser_skip -ne 0 ]; then
-		return
-	fi
-
 	if [ "$1" = "" ]; then
 		internal_action="lib"
 	else
@@ -150,6 +146,22 @@ build_project(){
 
 	if [ $internal_action = "prog" ]; then
 		compile_prog
+	fi
+}
+
+install_project(){
+	if [ "$1" = "" ]; then
+		internal_action="lib"
+	else
+		internal_action="$1"
+	fi
+
+	if [ $internal_action = "lib" ]; then
+		install_lib
+	fi
+
+	if [ $internal_action = "prog" ]; then
+		install_prog
 	fi
 }
 

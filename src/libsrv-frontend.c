@@ -13,13 +13,14 @@ int plSrvStartStop(int action, char* service, plmt_t* mt){
 		case PLSRV_START: ;
 			printf("* Starting service %s...\n", service);
 
-			lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
 			plsrv_t* srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
 			int servicePid = plSrvExecuteSupervisor(srvStruct);
+			if(srvStruct->respawn)
+				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
 
 			if(servicePid > 0){
 				char numberBuffer[16];
-				snprintf(numberBuffer, 16, "%d", servicePid);
+				snprintf(numberBuffer, 16, "%d\n", servicePid);
 				plFPuts(numberBuffer, lockFile);
 				plFClose(lockFile);
 			}else if(servicePid == -1){
@@ -30,10 +31,9 @@ int plSrvStartStop(int action, char* service, plmt_t* mt){
 		case PLSRV_STOP: ;
 			printf("* Stopping service %s...\n", service);
 
-			lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
+			lockFile = plSrvSafeOpen(PLSRV_STOP, service, mt);
 			char numBuffer[16] = "";
-			char* pointerHolder;
-			pid_t pidNum;
+			pid_t pidNum = 0;
 
 			plFGets(numBuffer, 16, lockFile);
 			pidNum = plSafeStrtonum(numBuffer);

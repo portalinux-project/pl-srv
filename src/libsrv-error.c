@@ -28,7 +28,7 @@ long plSafeStrtonum(char* buffer){
 	char* pointerHolder;
 	long retNum = strtol(buffer, &pointerHolder, 10);
 
-	if(pointerHolder != NULL && *pointerHolder != '\0')
+	if(pointerHolder != NULL && *pointerHolder != '\0' && *pointerHolder != '\n')
 		plSrvErrorNoRet("* plSafeStrtonum: Buffer was not a number", false, true);
 
 	return retNum;
@@ -49,7 +49,7 @@ plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt){
 		plSrvErrorNoRet("* plSrvSafeOpen: NULL was passed as an argument", false, true);
 
 	char curPath[256] = "";
-	char fileMode[3] = "r+";
+	char fileMode[2] = "r";
 	getcwd(curPath, 256);
 
 	if(mode == PLSRV_START)

@@ -21,19 +21,15 @@ void setSignal(int signal){
 
 int spawnExec(string_t path, string_t* args){
 	pid_t exec = fork();
-	int status;
 	if(exec == 0){
 		sleep(1);
 		char buffer[256];
 		execv(realpath(path, buffer), args);
 
-		perror("* Error excecuting program");
+		perror("* Error executing program");
 		return 255;
-	}else{
-		activePid = exec;
-		waitpid(exec, &status, 0);
 	}
-	return status;
+	return exec;
 }
 
 pid_t plSrvGetActivePid(){
@@ -60,13 +56,15 @@ int plSrvExecuteSupervisor(plsrv_t* service){
 			freopen("/dev/null", "w", stdout);
 		}
 
-		spawnExec(service->path, service->args);
+		int status;
+		activePid = spawnExec(service->path, service->args);
+		waitpid(activePid, &status, 0);
 		if(service->respawn == true){
-			while(1)
-				spawnExec(service->path, service->args);
+			while(1){
+				activePid = spawnExec(service->path, service->args);
+				waitpid(activePid, &status, 0);
+			}
 		}
-
-		activePid = 0;
 	}
 
 	return exec;
