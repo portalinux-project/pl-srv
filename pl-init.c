@@ -13,7 +13,9 @@ bool inChroot = false;
 
 void signalHandler(int signal){
 	string_t plSrvArgs[3] = { "pl-srv", "halt", NULL };
-	spawnExec("/usr/bin/pl-srv", plSrvArgs);
+	pid_t plSrvPid = spawnExec("/usr/bin/pl-srv", plSrvArgs);
+	int status = 0;
+	waitpid(plSrvPid, &status, 0);
 
 	fputs("* Force-killing all processes...", stdout);
 	kill(-1, SIGKILL);
