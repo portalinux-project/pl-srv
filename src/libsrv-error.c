@@ -34,7 +34,7 @@ long plSafeStrtonum(char* buffer){
 	return retNum;
 }
 
-void plSrvInfraTest(){
+void plSrvInfraTest(void){
 	struct stat srvDir;
 	struct stat logDir;
 	plStat("/etc/pl-srv", &srvDir);

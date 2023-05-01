@@ -10,8 +10,8 @@ void signalHandler(int signal){
 
 	if(activePid > 1){
 		switch(signal){
-			case SIGTERM: ;
-			case SIGINT: ;
+			case SIGTERM:
+			case SIGINT:
 				kill(activePid, SIGTERM);
 				break;
 		}

@@ -5,12 +5,12 @@
 \************************************************************/
 #include <libsrv.h>
 
-int plSrvStartStop(int action, char* service, plmt_t* mt){
+int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 	plfile_t* srvFile = plSrvSafeOpen(PLSRV_START, service, mt);
 	plfile_t* lockFile;
 
 	switch(action){
-		case PLSRV_START: ;
+		case PLSRV_START:
 			printf("* Starting service %s...\n", service);
 
 			plsrv_t* srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
@@ -28,7 +28,7 @@ int plSrvStartStop(int action, char* service, plmt_t* mt){
 				return 2;
 			}
 			break;
-		case PLSRV_STOP: ;
+		case PLSRV_STOP:
 			printf("* Stopping service %s...\n", service);
 
 			lockFile = plSrvSafeOpen(PLSRV_STOP, service, mt);
@@ -42,26 +42,43 @@ int plSrvStartStop(int action, char* service, plmt_t* mt){
 			plFClose(lockFile);
 			plSrvRemoveLock(service);
 			break;
-	}
+		case PLSRV_INIT:
+		case PLSRV_HALT:
+		case PLSRV_START_LOCK:
+		default:
+			// catch all just incase a programing oopsie happens so we get a
+			// proper error instead of a long gdb/lldb session.
+			plSrvErrorNoRet("Error: plSrvStartStop() passed invalid plsrvactions_t.", false, true);
+			break; // never reached
+		}
 
-	return 0;
+		return 0;
 }
 
-void plSrvInitHalt(int action, plmt_t* mt){
-	DIR* directory;
+void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
+	DIR* directory = NULL;
 	struct dirent* directoryEntry;
 	int mode;
 
-	if(action == PLSRV_INIT){
-		directory = opendir("/etc/pl-srv");
-		mode = PLSRV_START;
-	}else{
-		directory = opendir("/var/pl-srv");
-		mode = PLSRV_STOP;
+	switch (action) {
+		case PLSRV_INIT:
+			directory = opendir("/etc/pl-srv");
+			mode = PLSRV_START;
+			break;
+		case PLSRV_HALT:
+			directory = opendir("/var/pl-srv");
+			mode = PLSRV_STOP;
+			break;
+		default:
+			// catch all just incase a programing oopsie happens so we get a
+			// proper error instead of a long gdb/lldb session.
+			plSrvErrorNoRet("Error: plSrvInitHalt() passed invalid plsrvactions_t", false, true);
+			break; // never reached
 	}
 
-	readdir(directory);
-	readdir(directory);
+	// remove . and .. from directory listing
+	(void)readdir(directory);
+	(void)readdir(directory);
 
 	while((directoryEntry = readdir(directory)) != NULL){
 		plSrvStartStop(mode, directoryEntry->d_name, mt);

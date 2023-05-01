@@ -4,6 +4,7 @@
  libsrv-supervisor.c: pl-srv as a library, Supervisor source file
 \****************************************************************/
 #include <libsrv.h>
+
 pid_t activePid = 0;
 
 void setSignal(int signal){
@@ -32,7 +33,7 @@ int spawnExec(string_t path, string_t* args){
 	return exec;
 }
 
-pid_t plSrvGetActivePid(){
+pid_t plSrvGetActivePid(void){
 	return activePid;
 }
 

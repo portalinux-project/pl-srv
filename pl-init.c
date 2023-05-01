@@ -26,15 +26,18 @@ void signalHandler(int signal){
 	puts("Done.");
 
 	switch(signal){
-		case SIGUSR2: ;
+		case SIGUSR2:
 			puts("* Powering off...");
 			reboot(RB_POWER_OFF);
-		case SIGUSR1: ;
+			break;
+		case SIGUSR1:
 			puts("* Halting system...");
 			reboot(RB_HALT_SYSTEM);
-		case SIGTERM: ;
+			break;
+		case SIGTERM:
 			puts("* Rebooting...");
 			reboot(RB_AUTOBOOT);
+			break;
 	}
 }
 
