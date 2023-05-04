@@ -66,7 +66,7 @@ int safeMountBoot(string_t dest, string_t fstype){
 int main(int argc, string_t argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
-	puts("PortaLinux Init v0.02");
+	puts("PortaLinux Init v0.03");
 	puts("(c) 2023 pocketlinux32, Under MPLv2.0\n");
 
 	// Argument parsing

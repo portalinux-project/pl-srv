@@ -14,10 +14,10 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			printf("* Starting service %s...\n", service);
 
 			plsrv_t* srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
-			int servicePid = plSrvExecuteSupervisor(srvStruct);
 			if(srvStruct->respawn)
 				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
 
+			int servicePid = plSrvExecuteSupervisor(srvStruct);
 			if(servicePid > 0){
 				char numberBuffer[16];
 				snprintf(numberBuffer, 16, "%d\n", servicePid);
