@@ -35,7 +35,11 @@ _parse_projectstruct(){
 		progname=$(echo "$1" | cut -d'|' -f2)
 		srcdir=$(echo "$1" | cut -d'|' -f3)
 		linkflags=$(echo "$1" | cut -d'|' -f4 | sed 's/,/\ /g')
-		no_install=$(echo "$1" | cut -d'|' -f5)
+		prog_no_install=$(echo "$1" | cut -d'|' -f5)
+	fi
+
+	if [ "$linkflags" = "''" ]; then
+		linkflags=""
 	fi
 
 	if [ "$srcdir" = "" ]; then
@@ -118,6 +122,11 @@ install_lib(){
 }
 
 install_prog(){
+	if [ "$prog_no_install" != "" ]; then
+		echo "Skipping $progname"
+		return
+	fi
+
 	printf "Installing program $progname..."
 	mv $progname "$bindir"
 	echo "Done."
@@ -198,16 +207,12 @@ clean_project(){
 printf "PocketLinux32's Generic C Build System v0.03\n\n"
 
 if [ $# -lt 1 ]; then
-	echo "Error: Not enough arguments"
-	exit
+	echo "Error: Not enough arguments. Please run $0 help to see all of the valid options and try again"
+	exit 1
 fi
 
 case $1 in
 	clean)
-		rm obj core* -rf
-		if [ "$2" = "fully" ]; then
-			rm -f .config
-		fi
 		action="clean_project"
 		;;
 	build)
@@ -222,6 +227,9 @@ case $1 in
 		echo "install		Installs the compiled library to dest"
 		exit 0
 		;;
+	*)
+		echo "Error: Unrecognized option. Please run $0 help to see all of the valid options and try again"
+		exit 1
 esac
 
 if [ ! -f ".config" ]; then
@@ -252,6 +260,13 @@ for i in $main_project; do
 		fi
 	fi
 done
+
+if [ "$action" = "clean_project" ]; then
+	rm -rf obj core*
+	if [ "$2" = "fully" ]; then
+		rm -f .config
+	fi
+fi
 
 for i in $lib_projectstruct; do
 	_parse_projectstruct $i
