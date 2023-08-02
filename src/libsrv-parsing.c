@@ -1,5 +1,5 @@
 /***********************************************************************\
- pl-srv, v0.02
+ pl-srv, v0.03
  (c) 2023 pocketlinux32, Under MPLv2.0
  libsrv-parsing.c: pl-srv as a library, Service file parsing source file
 \***********************************************************************/

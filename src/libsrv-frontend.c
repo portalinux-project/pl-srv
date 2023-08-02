@@ -1,5 +1,5 @@
 /************************************************************\
- pl-srv, v0.02
+ pl-srv, v0.03
  (c) 2023 pocketlinux32, Under MPLv2.0
  libsrv-frontend.c: pl-srv as a library, Frontend source file
 \************************************************************/
@@ -46,9 +46,9 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 		case PLSRV_HALT:
 		case PLSRV_START_LOCK:
 		default:
-			// catch all just incase a programing oopsie happens so we get a
+			// Catch all just incase a programing oopsie happens so we get a
 			// proper error instead of a long gdb/lldb session.
-			plSrvErrorNoRet("Error: plSrvStartStop() passed invalid plsrvactions_t.", false, true);
+			plSrvPanic("plSrvStartStop: Invalid plsrvactions_t value", false, true);
 			break; // never reached
 		}
 
@@ -70,17 +70,15 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 			mode = PLSRV_STOP;
 			break;
 		default:
-			// catch all just incase a programing oopsie happens so we get a
+			// Catch all just incase a programing oopsie happens so we get a
 			// proper error instead of a long gdb/lldb session.
-			plSrvErrorNoRet("Error: plSrvInitHalt() passed invalid plsrvactions_t", false, true);
+			plSrvPanic("plSrvInitHalt: Invalid plsrvactions_t value", false, true);
 			break; // never reached
 	}
 
-	// remove . and .. from directory listing
-	(void)readdir(directory);
-	(void)readdir(directory);
-
 	while((directoryEntry = readdir(directory)) != NULL){
-		plSrvStartStop(mode, directoryEntry->d_name, mt);
+		// Check to remove . and .. from directory listing
+		if(strcmp(directoryEntry->d_name, ".") != 0 && strcmp(directoryEntry->d_name, "..") != 0)
+			plSrvStartStop(mode, directoryEntry->d_name, mt);
 	}
 }

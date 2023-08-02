@@ -35,7 +35,7 @@ int spawnExec(string_t path, string_t* args);
 pid_t plSrvGetActivePid(void);
 int plSrvExecuteSupervisor(plsrv_t* service);
 
-void plSrvErrorNoRet(char* string, bool usePerror, bool developerBug);
+void plSrvPanic(char* string, bool usePerror, bool developerBug);
 void plStat(char* path, struct stat* statStruct);
 long plSafeStrtonum(char* buffer);
 void plSrvInfraTest(void);
