@@ -26,4 +26,4 @@ is portable and can run on anything `libsrv` runs on.
 # Contributions
 
 I do plan on accepting contributions to the project once it gets to its 1.0
-release, but currently, no contributions are not being accepted.
+release, but currently, no contributions are being accepted.
