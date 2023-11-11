@@ -1,48 +1,57 @@
-/***********************************************************************\
- pl-srv, v0.03
- (c) 2023 pocketlinux32, Under MPLv2.0
- libsrv-parsing.c: pl-srv as a library, Service file parsing source file
-\***********************************************************************/
+/**********************************************************\
+ pl-srv, v0.04
+ (c) 2023 pocketlinux32, Under MPL 2.0
+ libsrv-parsing.c: pl-srv as a library, parsing source file
+\**********************************************************/
 #include <libsrv.h>
 
-plsrv_t* plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
+plsrv_t plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
 	if(srvFile == NULL || mt == NULL)
-		return NULL;
+		plRTPanic("plSrvGenerateServiceStruct", PLRT_ERROR | PLRT_NULL_PTR, true);
 
-	plsrv_t* returnStruct = plMTAllocE(mt, sizeof(plsrv_t));
-	returnStruct->respawn = false;
-	returnStruct->background = false;
+	plsrv_t returnStruct = {
+		.args = {
+			.pointer = NULL,
+			.size = 0
+		},
+		.deps = {
+			.pointer = NULL,
+			.size = 0
+		},
+		.respawn = false,
+		.background = false
+	};
 
-	byte_t buffer[256] = "";
-	while(plFGets(buffer, 256, srvFile) != NULL){
-		plmltoken_t* plmlToken = plMLParse(buffer, mt);
-		string_t tokenName;
+	char rawBuf[256] = "";
+	plstring_t buffer = {
+		.data = {
+			.pointer = rawBuf,
+			.size = 256
+		},
+		.isplChar = false,
+		.mt = NULL
+	};
+	while(plFGets(&buffer, srvFile) != -1){
+		plmltoken_t token = plMLParse(buffer, mt);
 
-		plMLGetTokenAttrib(plmlToken, &tokenName, PLML_GET_NAME);
+		if(strcmp("exec", token.name.data.pointer) == 0){
+			if(token.type != PLML_TYPE_STRING)
+				plRTPanic("plSrvGenerateServiceStruct", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
-		if(strcmp("exec", tokenName) == 0){
-			string_t tokenVal;
-			plMLGetTokenAttrib(plmlToken, &tokenVal, PLML_GET_VALUE);
+			returnStruct.args = plRTParser(plRTStrFromCStr(token.value.string.pointer, NULL), mt);
+		}else if(strcmp("respawn", token.name.data.pointer) == 0){
+			if(token.type != PLML_TYPE_BOOL)
+				plRTPanic("plSrvGenerateServiceStruct", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
-			plarray_t* tokenizedVal = plParser(tokenVal, mt);
-			plMTRealloc(mt, tokenizedVal->array, (tokenizedVal->size + 1) * sizeof(string_t*));
-			((string_t*)tokenizedVal->array)[tokenizedVal->size] = NULL;
+			returnStruct.respawn = token.value.boolean;
+		}else if(strcmp("background", token.name.data.pointer) == 0){
+			if(token.type != PLML_TYPE_BOOL)
+				plRTPanic("plSrvGenerateServiceStruct", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
-			returnStruct->args = tokenizedVal->array;
-			returnStruct->path = ((string_t*)tokenizedVal->array)[0];
-
-			plMTFree(mt, tokenizedVal);
-		}else if(strcmp("respawn", tokenName) == 0){
-			bool* tokenVal;
-			plMLGetTokenAttrib(plmlToken, &tokenVal, PLML_GET_VALUE);
-			returnStruct->respawn = *tokenVal;
-		}else if(strcmp("background", tokenName) == 0){
-			bool* tokenVal;
-			plMLGetTokenAttrib(plmlToken, &tokenVal, PLML_GET_VALUE);
-			returnStruct->background = *tokenVal;
+			returnStruct.background = token.value.boolean;
 		}
 
-		plMLFreeToken(plmlToken);
+		buffer.data.size = 256;
 	}
 
 	return returnStruct;

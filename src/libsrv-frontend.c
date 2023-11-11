@@ -1,6 +1,6 @@
 /************************************************************\
- pl-srv, v0.03
- (c) 2023 pocketlinux32, Under MPLv2.0
+ pl-srv, v0.04
+ (c) 2023 pocketlinux32, Under MPL 2.0
  libsrv-frontend.c: pl-srv as a library, Frontend source file
 \************************************************************/
 #include <libsrv.h>
@@ -13,15 +13,16 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 		case PLSRV_START:
 			printf("* Starting service %s...\n", service);
 
-			plsrv_t* srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
-			if(srvStruct->respawn)
+			plsrv_t srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
+			if(srvStruct.respawn)
 				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct);
 			if(servicePid > 0){
 				char numberBuffer[16];
 				snprintf(numberBuffer, 16, "%d\n", servicePid);
-				plFPuts(numberBuffer, lockFile);
+				plstring_t buffer = plRTStrFromCStr(numberBuffer, NULL);
+				plFPuts(&buffer, lockFile);
 				plFClose(lockFile);
 			}else if(servicePid == -1){
 				printf("* Error: Failed to start service %s", service);
@@ -33,10 +34,18 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 
 			lockFile = plSrvSafeOpen(PLSRV_STOP, service, mt);
 			char numBuffer[16] = "";
+			plstring_t buffer = {
+				.data = {
+					.pointer = numBuffer,
+					.size = 16
+				},
+				.isplChar = false,
+				.mt = NULL
+			};
 			pid_t pidNum = 0;
 
-			plFGets(numBuffer, 16, lockFile);
-			pidNum = plSafeStrtonum(numBuffer);
+			plFGets(&buffer, lockFile);
+			pidNum = plSrvStrtonum(numBuffer);
 
 			kill(pidNum, SIGTERM);
 			plFClose(lockFile);
@@ -48,7 +57,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 		default:
 			// Catch all just incase a programing oopsie happens so we get a
 			// proper error instead of a long gdb/lldb session.
-			plSrvPanic("plSrvStartStop: Invalid plsrvactions_t value", false, true);
+			plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, true);
 			break; // never reached
 		}
 
@@ -60,19 +69,21 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	struct dirent* directoryEntry;
 	int mode;
 
-	switch (action) {
+	switch(action){
 		case PLSRV_INIT:
+			puts("* Starting all active services...");
 			directory = opendir("/etc/pl-srv");
 			mode = PLSRV_START;
 			break;
 		case PLSRV_HALT:
+			puts("* Halting all running services...");
 			directory = opendir("/var/pl-srv");
 			mode = PLSRV_STOP;
 			break;
 		default:
 			// Catch all just incase a programing oopsie happens so we get a
 			// proper error instead of a long gdb/lldb session.
-			plSrvPanic("plSrvInitHalt: Invalid plsrvactions_t value", false, true);
+			plRTPanic("plSrvInitHalt", PLRT_ERROR | PLRT_INVALID_TOKEN, true);
 			break; // never reached
 	}
 
@@ -80,5 +91,15 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 		// Check to remove . and .. from directory listing
 		if(strcmp(directoryEntry->d_name, ".") != 0 && strcmp(directoryEntry->d_name, "..") != 0)
 			plSrvStartStop(mode, directoryEntry->d_name, mt);
+	}
+
+	if(action == PLSRV_HALT){
+		fputs("* Force-killing all processes...", stdout);
+		kill(-1, SIGKILL);
+		puts("Done.");
+
+		fputs("* Syncing cached file ops...", stdout);
+		sync();
+		puts("Done.");
 	}
 }

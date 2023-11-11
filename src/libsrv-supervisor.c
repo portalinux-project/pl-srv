@@ -1,7 +1,7 @@
 /****************************************************************\
- pl-srv, v0.03
- (c) 2023 pocketlinux32, Under MPLv2.0
- libsrv-supervisor.c: pl-srv as a library, Supervisor source file
+ pl-srv, v0.04
+ (c) 2023 pocketlinux32, Under MPL 2.0
+ libsrv-supervisor.c: pl-srv as a library, supervisor source file
 \****************************************************************/
 #include <libsrv.h>
 
@@ -20,15 +20,19 @@ void setSignal(int signal){
 		sigaction(signal, &newHandler, NULL);
 }
 
-int spawnExec(string_t path, string_t* args){
+int spawnExec(plptr_t args){
 	pid_t exec = fork();
 	if(exec == 0){
 		sleep(1);
-		char buffer[256];
-		execv(realpath(path, buffer), args);
+		char* rawArgs[args.size + 1];
+		for(int i = 0; i < args.size; i++)
+			rawArgs[i] = ((plstring_t*)args.pointer)[i].data.pointer;
+		rawArgs[args.size] = NULL;
 
-		perror("* Error executing program");
-		return 255;
+		char buffer[256];
+		execv(realpath(rawArgs[0], buffer), rawArgs);
+
+		plRTPanic("spawnExec", PLRT_ERROR | PLRT_ERRNO | errno, false);
 	}
 	return exec;
 }
@@ -37,12 +41,9 @@ pid_t plSrvGetActivePid(void){
 	return activePid;
 }
 
-int plSrvExecuteSupervisor(plsrv_t* service){
-	if(service == NULL)
-		return -1;
-
+int plSrvExecuteSupervisor(plsrv_t service){
 	pid_t exec = 0;
-	bool isForked = (service->respawn || service->background);
+	bool isForked = (service.respawn || service.background);
 	if(isForked)
 		exec = fork();
 
@@ -52,17 +53,17 @@ int plSrvExecuteSupervisor(plsrv_t* service){
 			setSignal(SIGINT);
 		}
 
-		if(service->background){
+		if(service.background){
 			freopen("/dev/null", "w", stdin);
 			freopen("/dev/null", "w", stdout);
 		}
 
 		int status;
-		activePid = spawnExec(service->path, service->args);
+		activePid = spawnExec(service.args);
 		waitpid(activePid, &status, 0);
-		if(service->respawn == true){
+		if(service.respawn == true){
 			while(1){
-				activePid = spawnExec(service->path, service->args);
+				activePid = spawnExec(service.args);
 				waitpid(activePid, &status, 0);
 			}
 		}

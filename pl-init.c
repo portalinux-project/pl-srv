@@ -1,6 +1,6 @@
 /******************************************************\
- pl-srv, v0.02
- (c) 2023 pocketlinux32, Under MPLv2.0
+ pl-srv, v0.04
+ (c) 2023 pocketlinux32, Under MPL 2.0
  pl-init.c: Initializes the system enough to run pl-srv
 \******************************************************/
 #include <libsrv.h>
@@ -12,18 +12,8 @@
 bool inChroot = false;
 
 void signalHandler(int signal){
-	string_t plSrvArgs[3] = { "pl-srv", "halt", NULL };
-	pid_t plSrvPid = spawnExec("/usr/bin/pl-srv", plSrvArgs);
-	int status = 0;
-	waitpid(plSrvPid, &status, 0);
-
-	fputs("* Force-killing all processes...", stdout);
-	kill(-1, SIGKILL);
-	puts("Done.");
-
-	fputs("* Syncing cached file ops...", stdout);
-	sync();
-	puts("Done.");
+	plmt_t* mt = plMTInit(4 * 1024 * 1024);
+	plSrvInitHalt(PLSRV_HALT, mt);
 
 	switch(signal){
 		case SIGUSR2:
@@ -41,7 +31,7 @@ void signalHandler(int signal){
 	}
 }
 
-int safeMountBoot(string_t dest, string_t fstype){
+int safeMountBoot(char* dest, char* fstype){
 	struct stat root;
 	struct stat mountpoint;
 
@@ -63,10 +53,10 @@ int safeMountBoot(string_t dest, string_t fstype){
 	return 0;
 }
 
-int main(int argc, string_t argv[]){
+int main(int argc, char* argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
-	puts("PortaLinux Init v0.03");
+	puts("PortaLinux Init v0.04");
 	puts("(c) 2023 pocketlinux32, Under MPLv2.0\n");
 
 	// Argument parsing
@@ -94,8 +84,14 @@ int main(int argc, string_t argv[]){
 	// Simple Initialization
 	if(inChroot){
 		puts("Bypassing initialization and dropping you to a shell...");
-		string_t args[2] = { "sh", NULL };
-		execv("/bin/sh", args);
+		plstring_t shellArgs = plRTStrFromCStr("sh", NULL);
+		plptr_t args = {
+			.pointer = &shellArgs,
+			.size = 1
+		};
+		pid_t shellID = spawnExec(args);
+		int status;
+		waitpid(shellID, &status, 0);
 	}else{
 		if(pid != 1){
 			puts("Error: Init must be ran as PID 1");
@@ -117,8 +113,12 @@ int main(int argc, string_t argv[]){
 		puts("Done.");
 
 		puts("* Running pl-srv...\n");
-		string_t plSrvArgs[5] = { "pl-srv", "init", NULL };
-		spawnExec("/usr/bin/pl-srv", plSrvArgs);
+		plstring_t plSrvArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("init", NULL) };
+		plptr_t args = {
+			.pointer = plSrvArgs,
+			.size = 2
+		};
+		spawnExec(args);
 
 		while(true);
 	}

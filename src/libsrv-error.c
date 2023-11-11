@@ -1,62 +1,54 @@
 /***************************************************************\
- pl-srv, v0.03
- (c) 2023 pocketlinux32, Under MPLv2.0
- libsrv-error.c: pl-srv as a library, Error handling source file
+ pl-srv, v0.04
+ (c) 2023 pocketlinux32, Under MPL 2.0
+ libsrv-error.c: pl-srv as a library, error handling source file
 \***************************************************************/
 #include <libsrv.h>
 
-void plSrvPanic(char* string, bool usePerror, bool developerBug){
-	fputs("* ", stderr);
-	plPanic(string, usePerror, developerBug);
-}
-
-void plStat(char* path, struct stat* statStruct){
-	int retVal = stat(path, statStruct);
-
-	if(retVal == -1)
-		plSrvPanic("plStat: Infrastructure test failure", true, false);
-}
-
-long plSafeStrtonum(char* buffer){
-	char* pointerHolder;
-	long retNum = strtol(buffer, &pointerHolder, 10);
-
-	if(pointerHolder != NULL && *pointerHolder != '\0' && *pointerHolder != '\n')
-		plSrvPanic("plSafeStrtonum: Buffer was not a number", false, true);
+long plSrvStrtonum(char* buffer){
+	char* holder;
+	long retNum = strtol(buffer, &holder, 10);
+	if(holder != NULL && *holder != '\0' && *holder != '\n')
+		plRTPanic("plSrvStrtonum", PLRT_ERROR | PLRT_INVALID_TOKEN, true);
 
 	return retNum;
+}
+
+void plSrvStat(char* path, struct stat* statbuf){
+	int retVal = stat(path, statbuf);
+	if(retVal == -1){
+		plRTPanic("plSrvStat", PLRT_ERROR | PLRT_ERRNO | errno, false);
+	}
 }
 
 void plSrvInfraTest(void){
 	struct stat srvDir;
 	struct stat logDir;
-	plStat("/etc/pl-srv", &srvDir);
-	plStat("/var/pl-srv", &logDir);
 
-	if(!S_ISDIR(srvDir.st_mode) || !S_ISDIR(logDir.st_mode))
-		plSrvPanic("plSrvInfraTest: Infrastructure test failure: Not a directory", false, false);
+	plSrvStat("/etc/pl-srv", &srvDir);
+	plSrvStat("/var/pl-srv", &logDir);
+
+	if(!S_ISDIR(srvDir.st_mode) || !S_ISDIR(srvDir.st_mode))
+		plRTPanic("plSrvInfraTest", PLRT_ERROR | PLRT_NOT_DIR, false);
 }
 
-plfile_t* plSrvSafeOpen(int mode, char* string, plmt_t* mt){
-	if(!string || !mt)
-		plSrvPanic("plSrvSafeOpen: NULL was passed as an argument", false, true);
+plfile_t* plSrvSafeOpen(plsrvactions_t mode, char* filename, plmt_t* mt){
+	if(filename == NULL || mt == NULL)
+		plRTPanic("plSrvSafeOpen", PLRT_ERROR | PLRT_NULL_PTR, false);
 
 	char curPath[256] = "";
-	char fileMode[2] = "r";
+	plchar_t filemode = { .bytes = { 'r', '\0', '\0', '\0'} };
 	getcwd(curPath, 256);
 
-	if(mode == PLSRV_START)
+	if(mode == PLSRV_START){
 		chdir("/etc/pl-srv");
-	else{
+	}else{
 		chdir("/var/pl-srv");
 		if(mode == PLSRV_START_LOCK)
-			fileMode[0] = 'w';
+			filemode.bytes[0] = 'w';
 	}
 
-	plfile_t* retFile = plFOpen(string, fileMode, mt);
-	if(!retFile)
-		plSrvPanic("plSrvSafeOpen: Error opening file", true, false);
-
+	plfile_t* retFile = plFOpen(filename, (char*)filemode.bytes, mt);
 	chdir(curPath);
 	return retFile;
 }
@@ -69,5 +61,5 @@ void plSrvRemoveLock(char* service){
 	int retVal = remove(service);
 
 	if(retVal == -1)
-		plSrvPanic("plSrvRemoveLock: Error removing lock file", true, false);
+		plRTPanic("plSrvRemoveLock", PLRT_ERROR | PLRT_ERRNO | errno, false);
 }
