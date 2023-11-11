@@ -31,7 +31,7 @@ plsrv_t plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
 		.isplChar = false,
 		.mt = NULL
 	};
-	while(plFGets(&buffer, srvFile) != -1){
+	while(plFGets(&buffer, srvFile) != 1){
 		plmltoken_t token = plMLParse(buffer, mt);
 
 		if(strcmp("exec", token.name.data.pointer) == 0){
