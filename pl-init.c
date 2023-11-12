@@ -10,9 +10,9 @@
 #include <sys/reboot.h>
 
 bool inChroot = false;
+plmt_t* mt = NULL;
 
 void signalHandler(int signal){
-	plmt_t* mt = plMTInit(4 * 1024 * 1024);
 	plSrvInitHalt(PLSRV_HALT, mt);
 
 	switch(signal){
@@ -56,6 +56,7 @@ int safeMountBoot(char* dest, char* fstype){
 int main(int argc, char* argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
+	mt = plMTInit(4 * 1024 * 1024);
 	puts("PortaLinux Init v0.04");
 	puts("(c) 2023 pocketlinux32, Under MPLv2.0\n");
 
@@ -113,12 +114,7 @@ int main(int argc, char* argv[]){
 		puts("Done.");
 
 		puts("* Running pl-srv...\n");
-		plstring_t plSrvArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("init", NULL) };
-		plptr_t args = {
-			.pointer = plSrvArgs,
-			.size = 2
-		};
-		spawnExec(args);
+		plSrvInitHalt(PLSRV_INIT, mt);
 
 		while(true);
 	}
