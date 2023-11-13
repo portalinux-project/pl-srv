@@ -114,7 +114,10 @@ int main(int argc, char* argv[]){
 		puts("Done.");
 
 		puts("* Running pl-srv...\n");
-		plSrvInitHalt(PLSRV_INIT, mt);
+		if(fork() != 0){
+			plSrvInitHalt(PLSRV_INIT, mt);
+			return 0;
+		}
 
 		while(true);
 	}
