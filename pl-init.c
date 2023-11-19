@@ -13,7 +13,14 @@ bool inChroot = false;
 plmt_t* mt = NULL;
 
 void signalHandler(int signal){
-	plSrvInitHalt(PLSRV_HALT, mt);
+	pid_t forkedPid = fork();
+	int status = 0;
+	if(forkedPid == 0){
+		plSrvInitHalt(PLSRV_HALT, mt);
+		exit(0);
+	}
+	waitpid(forkedPid, &status, 0);
+
 
 	switch(signal){
 		case SIGUSR2:
