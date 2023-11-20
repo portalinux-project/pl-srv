@@ -114,7 +114,6 @@ int main(int argc, char* argv[]){
 		fputs("* Enabling signal handler: ", stdout);
 
 		setSignal(SIGPWR);
-		setSignal(SIGTERM);
 		setSignal(SIGINT);
 		setSignal(SIGUSR1);
 		setSignal(SIGUSR2);
@@ -122,9 +121,11 @@ int main(int argc, char* argv[]){
 
 		puts("* Running pl-srv...\n");
 		pid_t exec = fork();
-		if(exec == 0)
+		if(exec == 0){
 			plSrvInitHalt(PLSRV_INIT, mt);
-		else
+		}else{
+			setSignal(SIGTERM);
 			while(true);
+		}
 	}
 }
