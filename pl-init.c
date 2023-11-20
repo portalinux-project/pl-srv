@@ -67,7 +67,6 @@ int safeMountBoot(char* dest, char* fstype){
 int main(int argc, char* argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
-	mt = plMTInit(4 * 1024 * 1024);
 	puts("PortaLinux Init v0.04");
 	puts("(c) 2023 pocketlinux32, Under MPLv2.0\n");
 
@@ -131,7 +130,7 @@ int main(int argc, char* argv[]){
 			plptr_t execArr = {
 				.pointer = execArgs,
 				.size = 2
-			}
+			};
 
 			spawnExec(execArr);
 			exit(0);
