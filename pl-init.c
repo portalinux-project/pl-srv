@@ -18,11 +18,11 @@ void signalHandler(int signal){
 		.size = 2
 	};
 	pid_t forkedPid = fork();
-	int status = 0;
 	if(forkedPid == 0){
-		spawnExec(execArr);
+		forkedPid = spawnExec(execArr);
 		exit(0);
 	}
+	int status = 0;
 	waitpid(forkedPid, &status, 0);
 
 	switch(signal){
