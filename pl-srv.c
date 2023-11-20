@@ -37,7 +37,11 @@ int main(int argc, char* argv[]){
 			return 0;
 		}else{
 			plSrvInfraTest();
-			if(strcmp("soft-reboot", argv[1]) == 0){
+			if(strcmp("init", argv[1]) == 0){
+				plSrvInitHalt(PLSRV_INIT, mt);
+			}else if(strcmp("halt", argv[1]) == 0){
+				plSrvInitHalt(PLSRV_HALT, mt);
+			}else if(strcmp("soft-reboot", argv[1]) == 0){
 				puts("* Soft rebooting system...");
 				plSrvInitHalt(PLSRV_HALT, mt);
 				plSrvInitHalt(PLSRV_INIT, mt);

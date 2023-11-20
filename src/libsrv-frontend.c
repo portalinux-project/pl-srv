@@ -12,6 +12,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 	switch(action){
 		case PLSRV_START:
 			printf("* Starting service %s...\n", service);
+			fflush(stdout);
 
 			plsrv_t srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
 			if(srvStruct.respawn)
@@ -31,6 +32,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			break;
 		case PLSRV_STOP:
 			printf("* Stopping service %s...\n", service);
+			fflush(stdout);
 
 			lockFile = plSrvSafeOpen(PLSRV_STOP, service, mt);
 			char numBuffer[16] = "";

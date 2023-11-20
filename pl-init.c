@@ -10,17 +10,21 @@
 #include <sys/reboot.h>
 
 bool inChroot = false;
-plmt_t* mt = NULL;
 
 void signalHandler(int signal){
 	pid_t forkedPid = fork();
 	int status = 0;
 	if(forkedPid == 0){
-		plSrvInitHalt(PLSRV_HALT, mt);
+		plstring_t execArgs[2] = { plRTStrFromCStr("pl-srv", NULL), plRTStrFromCStr("halt", NULL) };
+		plptr_t execArr = {
+			.pointer = execArgs,
+			.size = 2
+		};
+
+		spawnExec(execArr);
 		exit(0);
 	}
 	waitpid(forkedPid, &status, 0);
-
 
 	switch(signal){
 		case SIGUSR2:
@@ -115,6 +119,7 @@ int main(int argc, char* argv[]){
 
 		setSignal(SIGPWR);
 		setSignal(SIGINT);
+		setSignal(SIGTERM);
 		setSignal(SIGUSR1);
 		setSignal(SIGUSR2);
 		puts("Done.");
@@ -122,10 +127,16 @@ int main(int argc, char* argv[]){
 		puts("* Running pl-srv...\n");
 		pid_t exec = fork();
 		if(exec == 0){
-			plSrvInitHalt(PLSRV_INIT, mt);
-		}else{
-			setSignal(SIGTERM);
-			while(true);
+			plstring_t execArgs[2] = { plRTStrFromCStr("pl-srv", NULL), plRTStrFromCStr("init", NULL) };
+			plptr_t execArr = {
+				.pointer = execArgs,
+				.size = 2
+			}
+
+			spawnExec(execArr);
+			exit(0);
 		}
+
+		while(true);
 	}
 }
