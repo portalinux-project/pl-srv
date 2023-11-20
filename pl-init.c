@@ -15,7 +15,7 @@ void signalHandler(int signal){
 	pid_t forkedPid = fork();
 	int status = 0;
 	if(forkedPid == 0){
-		plstring_t execArgs[2] = { plRTStrFromCStr("pl-srv", NULL), plRTStrFromCStr("halt", NULL) };
+		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("halt", NULL) };
 		plptr_t execArr = {
 			.pointer = execArgs,
 			.size = 2
@@ -124,14 +124,13 @@ int main(int argc, char* argv[]){
 		puts("Done.");
 
 		puts("* Running pl-srv...\n");
+		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("init", NULL) };
+		plptr_t execArr = {
+			.pointer = execArgs,
+			.size = 2
+		};
 		pid_t exec = fork();
 		if(exec == 0){
-			plstring_t execArgs[2] = { plRTStrFromCStr("pl-srv", NULL), plRTStrFromCStr("init", NULL) };
-			plptr_t execArr = {
-				.pointer = execArgs,
-				.size = 2
-			};
-
 			spawnExec(execArr);
 			exit(0);
 		}
