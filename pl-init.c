@@ -12,15 +12,14 @@
 bool inChroot = false;
 
 void signalHandler(int signal){
+	plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("halt", NULL) };
+	plptr_t execArr = {
+		.pointer = execArgs,
+		.size = 2
+	};
 	pid_t forkedPid = fork();
 	int status = 0;
 	if(forkedPid == 0){
-		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("halt", NULL) };
-		plptr_t execArr = {
-			.pointer = execArgs,
-			.size = 2
-		};
-
 		spawnExec(execArr);
 		exit(0);
 	}
