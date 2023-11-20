@@ -17,13 +17,9 @@ void signalHandler(int signal){
 		.pointer = execArgs,
 		.size = 2
 	};
-	pid_t forkedPid = fork();
-	if(forkedPid == 0){
-		forkedPid = spawnExec(execArr);
-		exit(0);
-	}
 	int status = 0;
-	waitpid(forkedPid, &status, 0);
+	pid_t execPid = spawnExec(execArr);
+	waitpid(execPid, &status, 0);
 
 	switch(signal){
 		case SIGUSR2:
