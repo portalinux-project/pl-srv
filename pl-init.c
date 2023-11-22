@@ -90,7 +90,7 @@ int main(int argc, char* argv[]){
 	// Simple Initialization
 	if(inChroot){
 		puts("Bypassing initialization and dropping you to a shell...");
-		plstring_t shellArgs = plRTStrFromCStr("sh", NULL);
+		plstring_t shellArgs = plRTStrFromCStr("/bin/sh", NULL);
 		plptr_t args = {
 			.pointer = &shellArgs,
 			.size = 1
