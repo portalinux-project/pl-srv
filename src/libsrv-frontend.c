@@ -123,7 +123,7 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 
 	plstring_t* direntsArr = dirents.pointer;
 	for(int i = 0; i < dirents.size; i++){
-		plSrvStartStop(mode, direntArr[i].data.pointer, mt);
+		plSrvStartStop(mode, direntsArr[i].data.pointer, mt);
 	}
 	plRTFreeParsedString(dirents);
 
