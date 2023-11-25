@@ -101,7 +101,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 
 void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	plptr_t dirents;
-	int mode;
+	plsrvactions_t mode;
 
 	switch(action){
 		case PLSRV_INIT:
@@ -123,8 +123,9 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 
 	plstring_t* direntsArr = dirents.pointer;
 	for(int i = 0; i < dirents.size; i++){
-		
+		plSrvStartStop(mode, direntArr[i].data.pointer, mt);
 	}
+	plRTFreeParsedString(dirents);
 
 	if(action == PLSRV_HALT){
 		fputs("* Force-killing all processes...", stdout);
