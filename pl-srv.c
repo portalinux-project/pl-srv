@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 
 	if(argc > 1){
 		if(strcmp("help", argv[1]) == 0){
-			puts("PortaLinux Service Supervisor v0.04");
+			puts("PortaLinux Service Supervisor v0.05");
 			puts("(c) 2023 pocketlinux32, Under MPL 2.0\n");
 			printf("Usage: %s {options} [value]\n\n", argv[0]);
 			puts("Starts and supervises a service. All service units are stored in /etc/pl-srv");
