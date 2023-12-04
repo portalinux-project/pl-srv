@@ -39,17 +39,23 @@ plptr_t plSrvGetDirents(char* path, plmt_t* mt){
 }
 
 int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
-	plfile_t* srvFile = plSrvSafeOpen(PLSRV_START, service, mt);
+	char realFilename[strlen(service) + 5];
+	realFilename[0] = '\0';
+	strcpy(realFilename, service);
+	if(strstr(service, ".srv") == NULL)
+		strcat(realFilename, ".srv");
+
+	plfile_t* srvFile = plSrvSafeOpen(PLSRV_START, realFilename, mt);
 	plfile_t* lockFile;
 
 	switch(action){
 		case PLSRV_START:
-			printf("* Starting service %s...\n", service);
+			printf("* Starting service %s...\n", realFilename);
 			fflush(stdout);
 
 			plsrv_t srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
 			if(srvStruct.respawn)
-				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, service, mt);
+				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct);
 			if(servicePid > 0){
@@ -59,15 +65,15 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 				plFPuts(&buffer, lockFile);
 				plFClose(lockFile);
 			}else if(servicePid == -1){
-				printf("* Error: Failed to start service %s", service);
+				printf("* Error: Failed to start service %s", realFilename);
 				return 2;
 			}
 			break;
 		case PLSRV_STOP:
-			printf("* Stopping service %s...\n", service);
+			printf("* Stopping service %s...\n", realFilename);
 			fflush(stdout);
 
-			lockFile = plSrvSafeOpen(PLSRV_STOP, service, mt);
+			lockFile = plSrvSafeOpen(PLSRV_STOP, realFilename, mt);
 			char numBuffer[16] = "";
 			plstring_t buffer = {
 				.data = {
@@ -84,7 +90,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 
 			kill(pidNum, SIGTERM);
 			plFClose(lockFile);
-			plSrvRemoveLock(service);
+			plSrvRemoveLock(realFilename);
 			break;
 		case PLSRV_INIT:
 		case PLSRV_HALT:

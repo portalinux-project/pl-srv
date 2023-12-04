@@ -36,6 +36,7 @@ pid_t plSrvGetActivePid(void);
 int plSrvExecuteSupervisor(plsrv_t service);
 
 long plSrvStrtonum(char* buffer);
+int plSrvCheckExist(char* path);
 void plSrvInfraTest(void);
 plfile_t* plSrvSafeOpen(plsrvactions_t mode, char* filename, plmt_t* mt);
 void plSrvRemoveLock(char* service);

@@ -62,7 +62,7 @@ int safeMountBoot(char* dest, char* fstype){
 int main(int argc, char* argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
-	puts("PortaLinux Init v0.04");
+	puts("PortaLinux Init v0.05");
 	puts("(c) 2023 pocketlinux32, Under MPLv2.0\n");
 
 	// Argument parsing
@@ -118,17 +118,23 @@ int main(int argc, char* argv[]){
 		setSignal(SIGUSR2);
 		puts("Done.");
 
-		puts("* Running pl-srv...\n");
-		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("init", NULL) };
+		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/sh", NULL), plRTStrFromCStr("/etc/pl-srv/basic-startup", NULL) };
 		plptr_t execArr = {
 			.pointer = execArgs,
 			.size = 2
 		};
-		pid_t exec = fork();
-		if(exec == 0){
-			spawnExec(execArr);
-			exit(0);
+
+		if(plSrvCheckExist("/etc/pl-srv/basic-startup") != -1){
+			fputs("* Running /etc/pl-srv/basic-startup...\n", stdout);
+			pid_t exec = spawnExec(execArr);
+			int status = 0;
+			waitpid(exec, &status, 0);
 		}
+
+		puts("* Running pl-srv...\n");
+		execArgs[0] = plRTStrFromCStr("/usr/bin/pl-srv", NULL);
+		execArgs[1] = plRTStrFromCStr("init", NULL);
+		spawnExec(execArr);
 
 		while(true);
 	}

@@ -14,19 +14,25 @@ long plSrvStrtonum(char* buffer){
 	return retNum;
 }
 
+int plSrvCheckExist(char* path){
+	struct stat pathStruct;
+	return stat(path, &pathStruct);
+}
+
 void plSrvStat(char* path, struct stat* statbuf){
 	int retVal = stat(path, statbuf);
-	if(retVal == -1){
+	if(retVal == -1)
 		plRTPanic("plSrvStat", PLRT_ERROR | PLRT_ERRNO | errno, false);
-	}
 }
 
 void plSrvInfraTest(void){
 	struct stat srvDir;
+	struct stat srvTrackDir;
 	struct stat logDir;
 
-	plSrvStat("/etc/pl-srv", &srvDir);
-	plSrvStat("/var/pl-srv", &logDir);
+	plSrvStat("/etc/pl-srv/srv", &srvDir);
+	plSrvStat("/var/pl-srv/srv", &srvTrackDir);
+	plSrvStat("/var/pl-srv/log", &logDir);
 
 	if(!S_ISDIR(srvDir.st_mode) || !S_ISDIR(srvDir.st_mode))
 		plRTPanic("plSrvInfraTest", PLRT_ERROR | PLRT_NOT_DIR, false);
@@ -41,9 +47,9 @@ plfile_t* plSrvSafeOpen(plsrvactions_t mode, char* filename, plmt_t* mt){
 	getcwd(curPath, 256);
 
 	if(mode == PLSRV_START){
-		chdir("/etc/pl-srv");
+		chdir("/etc/pl-srv/srv");
 	}else{
-		chdir("/var/pl-srv");
+		chdir("/var/pl-srv/srv");
 		if(mode == PLSRV_START_LOCK)
 			filemode.bytes[0] = 'w';
 	}
@@ -57,7 +63,7 @@ void plSrvRemoveLock(char* service){
 	char curPath[256] = "";
 	getcwd(curPath, 256);
 
-	chdir("/var/pl-srv");
+	chdir("/var/pl-srv/srv");
 	int retVal = remove(service);
 
 	if(retVal == -1)
