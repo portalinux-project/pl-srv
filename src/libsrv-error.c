@@ -27,12 +27,10 @@ void plSrvStat(char* path, struct stat* statbuf){
 
 void plSrvInfraTest(void){
 	struct stat srvDir;
-	struct stat srvTrackDir;
-	struct stat logDir;
+	struct stat srvStatusDir;
 
 	plSrvStat("/etc/pl-srv/srv", &srvDir);
-	plSrvStat("/var/pl-srv/srv", &srvTrackDir);
-	plSrvStat("/var/pl-srv/log", &logDir);
+	plSrvStat("/var/pl-srv/srv", &srvStatusDir);
 
 	if(!S_ISDIR(srvDir.st_mode) || !S_ISDIR(srvDir.st_mode))
 		plRTPanic("plSrvInfraTest", PLRT_ERROR | PLRT_NOT_DIR, false);
