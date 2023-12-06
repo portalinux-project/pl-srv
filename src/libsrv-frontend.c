@@ -1,5 +1,5 @@
 /************************************************************\
- pl-srv, v0.04
+ pl-srv, v0.05
  (c) 2023 pocketlinux32, Under MPL 2.0
  libsrv-frontend.c: pl-srv as a library, Frontend source file
 \************************************************************/
@@ -49,13 +49,17 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 	plfile_t* lockFile;
 
 	switch(action){
-		case PLSRV_START:
-			printf("* Starting service %s...\n", realFilename);
-			fflush(stdout);
-
+		case PLSRV_START: ;
 			plsrv_t srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
+			if(srvStruct.deps.size > 0){
+				for(int i = 0; i < srvStruct.deps.size; i++)
+					plSrvStartStop(PLSRV_START, ((plstring_t*)srvStruct.deps.pointer)[i].data.pointer, mt);
+			}
 			if(srvStruct.respawn)
 				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
+
+			printf("* Starting service %s...\n", realFilename);
+			fflush(stdout);
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct);
 			if(servicePid > 0){
@@ -69,7 +73,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 				return 2;
 			}
 			break;
-		case PLSRV_STOP:
+		case PLSRV_STOP: ;
 			printf("* Stopping service %s...\n", realFilename);
 			fflush(stdout);
 

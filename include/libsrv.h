@@ -1,5 +1,5 @@
 /********************************************\
- pl-srv, v0.04
+ pl-srv, v0.05
  (c) 2023 pocketlinux32, Under MPL 2.0
  libsrv.h: pl-srv as a library, source header
 \********************************************/
