@@ -116,12 +116,12 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	switch(action){
 		case PLSRV_INIT:
 			puts("* Starting all active services...");
-			dirents = plSrvGetDirents("/etc/pl-srv", mt);
+			dirents = plSrvGetDirents("/etc/pl-srv/srv", mt);
 			mode = PLSRV_START;
 			break;
 		case PLSRV_HALT:
 			puts("* Halting all running services...");
-			dirents = plSrvGetDirents("/var/pl-srv", mt);
+			dirents = plSrvGetDirents("/var/pl-srv/srv", mt);
 			mode = PLSRV_STOP;
 			break;
 		default:
