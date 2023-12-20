@@ -5,39 +5,6 @@
 \************************************************************/
 #include <libsrv.h>
 
-int plSrvSortDirents(const void* string1, const void* string2){
-	return plRTStrcmp(*(plstring_t*)string1, *(plstring_t*)string2);
-}
-
-plptr_t plSrvGetDirents(char* path, plmt_t* mt){
-	DIR* directory = opendir(path);
-	struct dirent* directoryEntry;
-	plptr_t srvList = {
-		.pointer = plMTAlloc(mt, 2 * sizeof(plstring_t)),
-		.size = 0
-	};
-
-	while((directoryEntry = readdir(directory)) != NULL){
-		// Check to remove . and .. from directory listing
-		if(strcmp(directoryEntry->d_name, ".") != 0 && strcmp(directoryEntry->d_name, "..") != 0){
-			if(srvList.size > 1){
-				memptr_t tempPtr = plMTRealloc(mt, srvList.pointer, (srvList.size + 1) * sizeof(plstring_t));
-				if(tempPtr == NULL)
-					plRTPanic("plSrvGetDirents", PLRT_FAILED_ALLOC, false);
-
-				srvList.pointer = tempPtr;
-			}
-
-			((plstring_t*)srvList.pointer)[srvList.size] = plRTStrFromCStr(directoryEntry->d_name, mt);
-			srvList.size++;
-		}
-	}
-
-	qsort(srvList.pointer, srvList.size, sizeof(plstring_t), plSrvSortDirents);
-
-	return srvList;
-}
-
 int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 	char realFilename[strlen(service) + 5];
 	realFilename[0] = '\0';
@@ -63,10 +30,9 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct);
 			if(servicePid > 0){
-				char numberBuffer[16];
-				snprintf(numberBuffer, 16, "%d\n", servicePid);
-				plstring_t buffer = plRTStrFromCStr(numberBuffer, NULL);
-				plFPuts(&buffer, lockFile);
+				char pidBuffer[32];
+				snprintf(pidBuffer, 32, "pid = %d\n", servicePid);
+				plFPuts(plRTStrFromCStr(pidBuffer, NULL), lockFile);
 				plFClose(lockFile);
 			}else if(servicePid == -1){
 				printf("* Error: Failed to start service %s", realFilename);
@@ -90,8 +56,11 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			pid_t pidNum = 0;
 
 			plFGets(&buffer, lockFile);
-			pidNum = plSrvStrtonum(numBuffer);
+			plmltoken_t plmlToken = plMLParse(buffer, mt);
+			if(plmlToken.type != PLML_TYPE_INT)
+				plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
+			pidNum = plmlToken.value.integer;
 			kill(pidNum, SIGTERM);
 			plFClose(lockFile);
 			plSrvRemoveLock(realFilename);
@@ -116,12 +85,12 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	switch(action){
 		case PLSRV_INIT:
 			puts("* Starting all active services...");
-			dirents = plSrvGetDirents("/etc/pl-srv/srv", mt);
+			dirents = plRTGetDirents("/etc/pl-srv/srv", mt);
 			mode = PLSRV_START;
 			break;
 		case PLSRV_HALT:
 			puts("* Halting all running services...");
-			dirents = plSrvGetDirents("/var/pl-srv/srv", mt);
+			dirents = plRTGetDirents("/var/pl-srv/srv", mt);
 			mode = PLSRV_STOP;
 			break;
 		default:

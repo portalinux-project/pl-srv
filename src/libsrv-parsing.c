@@ -50,14 +50,14 @@ plsrv_t plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
 
 			returnStruct.background = token.value.boolean;
 		}else if(strcmp("depends", token.name.data.pointer) == 0){
-			if(token.type != PLML_TYPE_ARRAY)
+			if(token.type != PLML_TYPE_STRING || !token.isArray)
 				plRTPanic("plSrvGenerateServiceStruct", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
 			returnStruct.deps.pointer = plMTAlloc(mt, token.value.array.size * sizeof(plstring_t));
 			returnStruct.deps.size = token.value.array.size;
 
 			for(int i = 0; i < returnStruct.deps.size; i++){
-				((plstring_t*)returnStruct.deps.pointer)[i].data = ((plsimpletoken_t*)token.value.array.pointer)[i].value.array;
+				((plstring_t*)returnStruct.deps.pointer)[i].data = ((plptr_t*)token.value.array.pointer)[i];
 				((plstring_t*)returnStruct.deps.pointer)[i].mt = mt;
 				((plstring_t*)returnStruct.deps.pointer)[i].isplChar = false;
 			}

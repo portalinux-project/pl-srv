@@ -18,7 +18,7 @@ void signalHandler(int signal){
 		.size = 2
 	};
 	int status = 0;
-	pid_t execPid = spawnExec(execArr);
+	pid_t execPid = plRTSpawn(execArr);
 	waitpid(execPid, &status, 0);
 
 	switch(signal){
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
 			.pointer = &shellArgs,
 			.size = 1
 		};
-		pid_t shellID = spawnExec(args);
+		pid_t shellID = plRTSpawn(args);
 		int status;
 		waitpid(shellID, &status, 0);
 	}else{
@@ -111,11 +111,11 @@ int main(int argc, char* argv[]){
 
 		fputs("* Enabling signal handler: ", stdout);
 
-		setSignal(SIGPWR);
-		setSignal(SIGINT);
-		setSignal(SIGTERM);
-		setSignal(SIGUSR1);
-		setSignal(SIGUSR2);
+		plRTSetSignal(SIGPWR);
+		plRTSetSignal(SIGINT);
+		plRTSetSignal(SIGTERM);
+		plRTSetSignal(SIGUSR1);
+		plRTSetSignal(SIGUSR2);
 		puts("Done.");
 
 		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/sh", NULL), plRTStrFromCStr("/etc/pl-srv/basic-startup", NULL) };
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
 
 		if(plSrvCheckExist("/etc/pl-srv/basic-startup") != -1){
 			fputs("* Running /etc/pl-srv/basic-startup...\n", stdout);
-			pid_t exec = spawnExec(execArr);
+			pid_t exec = plRTSpawn(execArr);
 			int status = 0;
 			waitpid(exec, &status, 0);
 		}
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
 		puts("* Running pl-srv...\n");
 		execArgs[0] = plRTStrFromCStr("/usr/bin/pl-srv", NULL);
 		execArgs[1] = plRTStrFromCStr("init", NULL);
-		spawnExec(execArr);
+		plRTSpawn(execArr);
 
 		while(true);
 	}
