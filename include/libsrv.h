@@ -6,9 +6,8 @@
 #define _XOPEN_SOURCE 700
 #pragma once
 #include <plrt.h>
+#include <libgen.h>
 #include <errno.h>
-#include <dirent.h>
-#include <unistd.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -33,7 +32,8 @@ void signalHandler(int signal);
 void setSignal(int signal);
 int spawnExec(plptr_t args);
 pid_t plSrvGetActivePid(void);
-int plSrvExecuteSupervisor(plsrv_t service);
+plfile_t* plSrvGetLogFile(void);
+int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt);
 
 long plSrvStrtonum(char* buffer);
 int plSrvCheckExist(char* path);

@@ -28,7 +28,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			printf("* Starting service %s...\n", realFilename);
 			fflush(stdout);
 
-			int servicePid = plSrvExecuteSupervisor(srvStruct);
+			int servicePid = plSrvExecuteSupervisor(srvStruct, mt);
 			if(servicePid > 0){
 				char pidBuffer[32];
 				snprintf(pidBuffer, 32, "pid = %d\n", servicePid);
