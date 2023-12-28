@@ -38,20 +38,20 @@ int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt){
 			freopen("/dev/null", "w", stdout);
 		}
 
+		snprintf(stringBuffer, 4096, "Started and supervising service %s", basename(((char**)service.args.pointer)[0]));
+		plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 		int status;
 		activePid = plRTSpawn(service.args);
-		snprintf(stringBuffer, 4096, "Started and supervising service %s with process ID %d", basename(((char**)service.args.pointer)[0]), activePid);
-		plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 		waitpid(activePid, &status, 0);
-		snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, status);
+		snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, WEXITSTATUS(status));
 		plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 		if(service.respawn == true){
 			while(1){
-				snprintf(stringBuffer, 4096, "Restarted and supervising service %s with process ID %d", basename(((char**)service.args.pointer)[0]), activePid);
+				snprintf(stringBuffer, 4096, "Restarted and supervising service %s", basename(((char**)service.args.pointer)[0]));
 				plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 				activePid = plRTSpawn(service.args);
 				waitpid(activePid, &status, 0);
-				snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, status);
+				snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, WEXITSTATUS(status));
 				plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 			}
 		}
