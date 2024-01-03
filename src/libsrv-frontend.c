@@ -101,8 +101,14 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	}
 
 	plstring_t* direntsArr = dirents.pointer;
+	struct timespec buf;
+	struct timespec sleepconst = {
+		.tv_sec = 0,
+		.tv_nsec = 5
+	};
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStartStop(mode, direntsArr[i].data.pointer, mt);
+		nanosleep(&sleepconst, &buf);
 	}
 	plRTFreeParsedString(dirents);
 
