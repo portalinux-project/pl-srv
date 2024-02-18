@@ -1,5 +1,5 @@
 /************************************************************\
- pl-srv, v0.05
+ pl-srv, v1.00
  (c) 2023 pocketlinux32, Under MPL 2.0
  libsrv-frontend.c: pl-srv as a library, Frontend source file
 \************************************************************/
@@ -30,9 +30,19 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct, mt);
 			if(servicePid > 0){
-				char pidBuffer[32];
-				snprintf(pidBuffer, 32, "pid = %d\n", servicePid);
-				plFPuts(plRTStrFromCStr(pidBuffer, NULL), lockFile);
+				char lockBuffer[srvStruct.deps.size * 4096];
+				snprintf(lockBuffer, 4096, "pid = %d\n", servicePid);
+				plFPuts(plRTStrFromCStr(lockBuffer, NULL), lockFile);
+				if(srvStruct.deps.size > 0){
+					snprintf(lockBuffer, 4096, "deps = [ ");
+					for(int i = 0; i < srvStruct.deps.size - 1; i++){
+						strcat(lockBuffer, ((plstring_t*)srvStruct.deps.pointer)[i].data.pointer);
+						strcat(lockBuffer, ", ");
+					}
+					strcat(lockBuffer, ((plstring_t*)srvStruct.deps.pointer)[srvStruct.deps.size - 1].data.pointer);
+					strcat(lockBuffer, " ]\n");
+					plFPuts(plRTStrFromCStr(lockBuffer, NULL), lockFile);
+				}
 				plFClose(lockFile);
 			}else if(servicePid == -1){
 				printf("* Error: Failed to start service %s", realFilename);
@@ -44,7 +54,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			fflush(stdout);
 
 			lockFile = plSrvSafeOpen(PLSRV_STOP, realFilename, mt);
-			char numBuffer[16] = "";
+			char numBuffer[65536] = "";
 			plstring_t buffer = {
 				.data = {
 					.pointer = numBuffer,
@@ -56,11 +66,32 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			pid_t pidNum = 0;
 
 			plFGets(&buffer, lockFile);
-			plmltoken_t plmlToken = plMLParse(buffer, mt);
-			if(plmlToken.type != PLML_TYPE_INT)
+			plmltoken_t pidToken = plMLParse(buffer, mt);
+			if(pidToken.type != PLML_TYPE_INT)
 				plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
-			pidNum = plmlToken.value.integer;
+			plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
+			plstring_t* tempDirentsArrPtr = tempDirents.pointer;
+			buffer.data.size = 65536;
+			for(int i = 0; i < tempDirents.size; i++){
+				plfile_t* tempFile = plFOpen(tempDirentsArrPtr[i].data.pointer, "r", mt);
+				plFGets(&buffer, lockFile);
+				if(plFGets(&buffer, lockFile) != 1){
+					plmltoken_t depsToken = plMLParse(buffer, mt);
+					plptr_t* depsList = depsToken.value.array.pointer;
+					int j = 0;
+					while(j < depsToken.value.array.size && strcmp(depsList[j].pointer, service) != 0)
+						j++;
+
+					if(j < depsToken.value.array.size && strcmp(depsList[j].pointer, service) != 0){
+						printf("Error: Service %s is depended on by service %s.\n", service, depsList[i].pointer);
+						plFClose(tempFile);
+					}
+				}
+				plFClose(tempFile);
+			}
+
+			pidNum = pidToken.value.integer;
 			kill(pidNum, SIGTERM);
 			plFClose(lockFile);
 			plSrvRemoveLock(realFilename);
