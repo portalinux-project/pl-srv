@@ -63,6 +63,7 @@ void plSrvRemoveLock(char* service){
 
 	chdir("/var/pl-srv/srv");
 	int retVal = remove(service);
+	chdir(curPath);
 
 	if(retVal == -1)
 		plRTPanic("plSrvRemoveLock", PLRT_ERROR | PLRT_ERRNO | errno, false);
