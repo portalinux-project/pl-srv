@@ -70,9 +70,12 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			if(pidToken.type != PLML_TYPE_INT)
 				plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
+			char curpath[4096] = "";
 			plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
 			plstring_t* tempDirentsArrPtr = tempDirents.pointer;
 			buffer.data.size = 65536;
+			getcwd(curpath, 4096);
+			chdir("/var/pl-srv/srv");
 			for(int i = 0; i < tempDirents.size; i++){
 				plfile_t* tempFile = plFOpen(tempDirentsArrPtr[i].data.pointer, "r", mt);
 				plFGets(&buffer, lockFile);
@@ -91,6 +94,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 				plFClose(tempFile);
 			}
 
+			chdir(curpath);
 			pidNum = pidToken.value.integer;
 			kill(pidNum, SIGTERM);
 			plFClose(lockFile);
@@ -135,7 +139,7 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	struct timespec buf;
 	struct timespec sleepconst = {
 		.tv_sec = 0,
-		.tv_nsec = 5
+		.tv_nsec = 10
 	};
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStartStop(mode, direntsArr[i].data.pointer, mt);
