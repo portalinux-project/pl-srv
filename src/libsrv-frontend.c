@@ -6,6 +6,8 @@
 #include <libsrv.h>
 
 int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
+	char curpath[4096] = "";
+	getcwd(curpath, 4096);
 	char realFilename[strlen(service) + 5];
 	realFilename[0] = '\0';
 	strcpy(realFilename, service);
@@ -24,6 +26,14 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			}
 			if(srvStruct.respawn)
 				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
+
+			chdir("/var/pl-srv/srv");
+			if(plSrvCheckExist(realFilename)){
+				printf("* Service %s has already been started, skipping...", realFilename);
+				chdir(curpath);
+				return 1;
+			}
+			chdir(curpath);
 
 			printf("* Starting service %s...\n", realFilename);
 			fflush(stdout);
@@ -70,11 +80,9 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 			if(pidToken.type != PLML_TYPE_INT)
 				plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
-			char curpath[4096] = "";
 			plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
 			plstring_t* tempDirentsArrPtr = tempDirents.pointer;
 			buffer.data.size = 65536;
-			getcwd(curpath, 4096);
 			chdir("/var/pl-srv/srv");
 			for(int i = 0; i < tempDirents.size; i++){
 				plfile_t* tempFile = plFOpen(tempDirentsArrPtr[i].data.pointer, "r", mt);
@@ -89,6 +97,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 					if(j < depsToken.value.array.size && strcmp(depsList[j].pointer, service) != 0){
 						printf("Error: Service %s is depended on by service %s.\n", service, depsList[i].pointer);
 						plFClose(tempFile);
+						return 3;
 					}
 				}
 				plFClose(tempFile);
