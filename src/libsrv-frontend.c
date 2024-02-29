@@ -24,8 +24,6 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 				for(int i = 0; i < srvStruct.deps.size; i++)
 					plSrvStartStop(PLSRV_START, ((plstring_t*)srvStruct.deps.pointer)[i].data.pointer, mt);
 			}
-			if(srvStruct.respawn)
-				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
 
 			chdir("/var/pl-srv/srv");
 			if(plSrvCheckExist(realFilename) != -1){
@@ -37,6 +35,9 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 
 			printf("* Starting service %s...\n", realFilename);
 			fflush(stdout);
+
+			if(srvStruct.respawn)
+				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct, mt);
 			if(servicePid > 0){
