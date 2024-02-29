@@ -28,8 +28,8 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
 
 			chdir("/var/pl-srv/srv");
-			if(plSrvCheckExist(realFilename)){
-				printf("* Service %s has already been started, skipping...", realFilename);
+			if(plSrvCheckExist(realFilename) != -1){
+				printf("* Service %s has already been started, skipping...\n", realFilename);
 				chdir(curpath);
 				return 1;
 			}
