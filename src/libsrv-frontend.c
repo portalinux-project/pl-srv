@@ -40,7 +40,7 @@ int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 				lockFile = plSrvSafeOpen(PLSRV_START_LOCK, realFilename, mt);
 
 			int servicePid = plSrvExecuteSupervisor(srvStruct, mt);
-			if(servicePid > 0){
+			if(servicePid > 0 && srvStruct.respawn){
 				char lockBuffer[srvStruct.deps.size * 4096];
 				snprintf(lockBuffer, 4096, "pid = %d\n", servicePid);
 				plFPuts(plRTStrFromCStr(lockBuffer, NULL), lockFile);
@@ -149,7 +149,7 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	struct timespec buf;
 	struct timespec sleepconst = {
 		.tv_sec = 0,
-		.tv_nsec = 100000
+		.tv_nsec = 5000000
 	};
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStartStop(mode, direntsArr[i].data.pointer, mt);
