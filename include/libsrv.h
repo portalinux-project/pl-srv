@@ -1,6 +1,6 @@
 /********************************************\
- pl-srv, v0.05
- (c) 2023 pocketlinux32, Under MPL 2.0
+ pl-srv, v1.00
+ (c) 2024 CinnamonWolfy, Under MPL 2.0
  libsrv.h: pl-srv as a library, source header
 \********************************************/
 #define _XOPEN_SOURCE 700
@@ -29,8 +29,6 @@ typedef struct plsrv {
 } plsrv_t;
 
 void signalHandler(int signal);
-void setSignal(int signal);
-int spawnExec(plptr_t args);
 pid_t plSrvGetActivePid(void);
 plfile_t* plSrvGetLogFile(void);
 int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt);

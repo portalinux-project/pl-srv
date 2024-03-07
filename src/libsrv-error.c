@@ -1,6 +1,6 @@
 /***************************************************************\
- pl-srv, v0.04
- (c) 2023 pocketlinux32, Under MPL 2.0
+ pl-srv, v1.00
+ (c) 2024 CinnamonWolfy, Under MPL 2.0
  libsrv-error.c: pl-srv as a library, error handling source file
 \***************************************************************/
 #include <libsrv.h>

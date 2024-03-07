@@ -1,6 +1,6 @@
 /************************************************************\
  pl-srv, v1.00
- (c) 2023 pocketlinux32, Under MPL 2.0
+ (c) 2024 CinnamonWolfy, Under MPL 2.0
  libsrv-frontend.c: pl-srv as a library, Frontend source file
 \************************************************************/
 #include <libsrv.h>
@@ -8,11 +8,6 @@
 int plSrvStartStop(plsrvactions_t action, char* service, plmt_t* mt){
 	char curpath[4096] = "";
 	getcwd(curpath, 4096);
-	char realFilename[strlen(service) + 5];
-	realFilename[0] = '\0';
-	strcpy(realFilename, service);
-	if(strstr(service, ".srv") == NULL)
-		strcat(realFilename, ".srv");
 
 	plfile_t* srvFile = plSrvSafeOpen(PLSRV_START, realFilename, mt);
 	plfile_t* lockFile;
@@ -148,7 +143,7 @@ void plSrvInitHalt(plsrvactions_t action, plmt_t* mt){
 	plstring_t* direntsArr = dirents.pointer;
 	struct timespec sleepconst = {
 		.tv_sec = 0,
-		.tv_nsec = 5000000
+		.tv_nsec = 10000000
 	};
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStartStop(mode, direntsArr[i].data.pointer, mt);
