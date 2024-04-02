@@ -14,15 +14,28 @@ long plSrvStrtonum(char* buffer){
 	return retNum;
 }
 
-int plSrvCheckExist(char* path){
+bool plSrvCheckExist(char* path){
 	struct stat pathStruct;
-	return stat(path, &pathStruct);
+	if(stat(path, &pathStruct))
+		return false;
+	return true;
 }
 
 void plSrvStat(char* path, struct stat* statbuf){
 	int retVal = stat(path, statbuf);
 	if(retVal == -1)
 		plRTPanic("plSrvStat", PLRT_ERROR | PLRT_ERRNO | errno, false);
+}
+
+bool plSrvIsServiceRunning(char* filename){
+	char curPath[256] = "";
+	getcwd(curPath, 256);
+
+	chdir("/var/pl-srv/srv");
+	bool retVal = plSrvCheckExist(filename);
+	chdir(curPath);
+
+	return retVal;
 }
 
 void plSrvInfraTest(void){

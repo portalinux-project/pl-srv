@@ -29,13 +29,11 @@ int plSrvStart(char* service, plmt_t* mt){
 			plSrvStart(((plstring_t*)srvStruct.deps.pointer)[i].data.pointer, mt);
 	}
 
-	chdir("/var/pl-srv/srv");
 	if(plSrvCheckExist(realFilename) != -1){
 		printf("* Service %s has already been started, skipping...\n", realFilename);
 		chdir(curpath);
 		return 1;
 	}
-	chdir(curpath);
 
 	printf("* Starting service %s...\n", realFilename);
 	fflush(stdout);
@@ -101,9 +99,8 @@ int plSrvStop(char* service, plmt_t* mt){
 	plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
 	plstring_t* tempDirentsArrPtr = tempDirents.pointer;
 	buffer.data.size = 65536;
-	chdir("/var/pl-srv/srv");
 	for(int i = 0; i < tempDirents.size; i++){
-		plfile_t* tempFile = plFOpen(tempDirentsArrPtr[i].data.pointer, "r", mt);
+		plfile_t* tempFile = plSrvSafeOpen(PLSRV_STOP, tempDirentsArrPtr[i].data.pointer, mt);
 		plFGets(&buffer, lockFile);
 		if(plFGets(&buffer, lockFile) != 1){
 			plmltoken_t depsToken = plMLParse(buffer, mt);
@@ -128,6 +125,32 @@ int plSrvStop(char* service, plmt_t* mt){
 	plSrvRemoveLock(realFilename);
 }
 
+void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
+	plstring_t* rawDirentArr = direntArray.pointer;
+	plstring_t workingDirentArr[direntArray.size];
+	char rawBuffer[65536];
+	plstring_t buffer = {
+		.data = {
+			.pointer = rawBuffer,
+			.size = 65536
+		},
+		.isplChar = false,
+		.mt = NULL
+	};
+	size_t writeMarker = 0;
+
+	for(int i = 0; i < direntArray.size; i++){
+		plfile_t* lockFile = plSrvSafeOpen(PLSRV_STOP, rawDirentArr[i].data.pointer, mt);
+		plFGets(&buffer, lockFile);
+		if(plFGets(&buffer, lockFile) == 1){
+			workingDirentArr[writeMarker] = rawDirentArr[i];
+			writeMarker++;
+		}
+	}
+
+	//TODO: the complex part of this thingie
+}
+
 void plSrvInit(plmt_t* mt){
 	plptr_t dirents = plRTGetDirents("/etc/pl-srv/srv", mt);
 	plstring_t* direntsArr = dirents.pointer;
@@ -144,7 +167,7 @@ void plSrvInit(plmt_t* mt){
 	plRTFreeParsedString(dirents);
 }
 
-void plSrrHalt(plmt_t* mt){
+void plSrvHalt(plmt_t* mt){
 	plptr_t dirents = plRTGetDirents("/var/pl-srv/srv", mt);
 	plstring_t* direntsArr = dirents.pointer;
 	struct timespec sleepconst = {
@@ -153,6 +176,7 @@ void plSrrHalt(plmt_t* mt){
 	};
 	puts("* Stopping all sevices...");
 
+	plSrvDetermineHaltOrder(&dirents);
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStop(direntsArr[i].data.pointer, mt);
 		nanosleep(&sleepconst, NULL);
