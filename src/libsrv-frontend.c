@@ -145,10 +145,37 @@ void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
 		if(plFGets(&buffer, lockFile) == 1){
 			workingDirentArr[writeMarker] = rawDirentArr[i];
 			writeMarker++;
+
+			rawDirentArr[i].data.pointer = NULL;
+			rawDirentArr[i].data.size = 0;
 		}
 	}
 
-	//TODO: the complex part of this thingie
+	while(writeMarker < direntArray.size){
+		for(int i = 0; i < direntArray.size; i++){
+			if(rawDirentArr[i].data.pointer != NULL){
+				plfile_t* lockFile = plSrvSafeOpen(PLSRV_STOP, rawDirentArr[i].data.pointer, mt);
+				plFGets(&buffer, lockFile);
+				if(plFGets(&buffer, lockFile) != 1){
+					plmltoken_t depsToken = plMLParse(buffer, mt);
+					plptr_t* depsList = depsToken.value.array.pointer;
+					size_t depCounter = 0;
+
+					int j = 0;
+					while(j < depsToken.value.array.size){
+						int k = 0;
+						while(k < writeMarker){
+							if(strcmp(depsList[j].pointer, workingDirentArr[k].data.pointer) == 0){
+								depCounter++;
+								j++;
+							}
+							k++;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void plSrvInit(plmt_t* mt){
