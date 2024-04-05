@@ -1,25 +1,53 @@
- /************************************************************\
+/************************************************************\
  pl-srv, v1.00
  (c) 2024 CinnamonWolfy, Under MPL 2.0
  libsrv-frontend.c: pl-srv as a library, Frontend source file
 \************************************************************/
 #include <libsrv.h>
 char currentPath[4096];
-char realFilename[strlen(service) + 5];
+char realFilename[256];
 plfile_t* srvFile = NULL;
 
-void preStartStop(char* srvName, plsrvactions_t action){
-	getcwd(currentPath);
+void preStartStop(char* srvName, plsrvactions_t action, plmt_t* mt){
+	getcwd(currentPath, 4096);
 
-	strcpy(realFilename, service);
-	if(strstr(service, ".srv") == NULL)
+	strcpy(realFilename, srvName);
+	if(strstr(srvName, ".srv") == NULL)
 		strcat(realFilename, ".srv");
 
 	srvFile = plSrvSafeOpen(action, realFilename, mt);
 }
 
+int getStopDeps(plstring_t* buffer, plmltoken_t* tokenBuffer, char* filename, plmt_t* mt){
+	plfile_t* tempFile = plSrvSafeOpen(PLSRV_STOP, filename, mt);
+	plFGets(buffer, tempFile);
+	if(plFGets(buffer, tempFile) != 1){
+		plFClose(tempFile);
+		plmltoken_t bufferToken = plMLParse(*buffer, mt);
+		memcpy(tokenBuffer, &bufferToken, sizeof(plmltoken_t));
+		if(tokenBuffer->type != PLML_TYPE_STRING || !tokenBuffer->isArray)
+			return 1;
+
+		return 0;
+	}
+
+	return 1;
+}
+
+int isStringInPLMLStrArray(plptr_t array, char* string){
+	plptr_t* stringList = array.pointer;
+	int i = 0;
+	while(i < array.size && strcmp(stringList[i].pointer, string) != 0)
+		i++;
+
+	if(i < array.size)
+		return i;
+
+	return 0;
+}
+
 int plSrvStart(char* service, plmt_t* mt){
-	preStartStop(service, PLSRV_START);
+	preStartStop(service, PLSRV_START, mt);
 
 	plfile_t* lockFile;
 	plsrv_t srvStruct = plSrvGenerateServiceStruct(srvFile, mt);
@@ -31,7 +59,7 @@ int plSrvStart(char* service, plmt_t* mt){
 
 	if(plSrvCheckExist(realFilename) != -1){
 		printf("* Service %s has already been started, skipping...\n", realFilename);
-		chdir(curpath);
+		chdir(currentPath);
 		return 1;
 	}
 
@@ -74,7 +102,7 @@ int plSrvStart(char* service, plmt_t* mt){
 }
 
 int plSrvStop(char* service, plmt_t* mt){
-	preStartStop(service, PLSRV_STOP);
+	preStartStop(service, PLSRV_STOP, mt);
 
 	printf("* Stopping service %s...\n", realFilename);
 	fflush(stdout);
@@ -92,34 +120,23 @@ int plSrvStop(char* service, plmt_t* mt){
 	pid_t pidNum = 0;
 
 	plFGets(&buffer, lockFile);
-	plmltoken_t pidToken = plMLParse(buffer, mt);
-	if(pidToken.type != PLML_TYPE_INT)
+	plmltoken_t bufferToken = plMLParse(buffer, mt);
+	if(bufferToken.type != PLML_TYPE_INT)
 		plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
+	pidNum = bufferToken.value.integer;
 
 	plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
 	plstring_t* tempDirentsArrPtr = tempDirents.pointer;
+	int offsetHolder = 0;
 	buffer.data.size = 65536;
 	for(int i = 0; i < tempDirents.size; i++){
-		plfile_t* tempFile = plSrvSafeOpen(PLSRV_STOP, tempDirentsArrPtr[i].data.pointer, mt);
-		plFGets(&buffer, lockFile);
-		if(plFGets(&buffer, lockFile) != 1){
-			plmltoken_t depsToken = plMLParse(buffer, mt);
-			plptr_t* depsList = depsToken.value.array.pointer;
-			int j = 0;
-			while(j < depsToken.value.array.size && strcmp(depsList[j].pointer, service) != 0)
-				j++;
-
-			if(j < depsToken.value.array.size && strcmp(depsList[j].pointer, service) != 0){
-				printf("Error: Service %s is depended on by service %s.\n", service, depsList[i].pointer);
-				plFClose(tempFile);
-				return 3;
-			}
+		if(getStopDeps(&buffer, &bufferToken, tempDirentsArrPtr[i].data.pointer, mt) == 0 && (offsetHolder = isStringInPLMLStrArray(bufferToken.value.array, service))){
+			printf("Error: Service %s is depended on by service %s.\n", service, ((plptr_t*)bufferToken.value.array.pointer)[offsetHolder].pointer);
+			return 3;
 		}
-		plFClose(tempFile);
 	}
 
-	chdir(curpath);
-	pidNum = pidToken.value.integer;
+	chdir(currentPath);
 	kill(pidNum, SIGTERM);
 	plFClose(lockFile);
 	plSrvRemoveLock(realFilename);
@@ -138,11 +155,10 @@ void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
 		.mt = NULL
 	};
 	size_t writeMarker = 0;
+	plmltoken_t depsToken;
 
 	for(int i = 0; i < direntArray.size; i++){
-		plfile_t* lockFile = plSrvSafeOpen(PLSRV_STOP, rawDirentArr[i].data.pointer, mt);
-		plFGets(&buffer, lockFile);
-		if(plFGets(&buffer, lockFile) == 1){
+		if(getStopDeps(&buffer, &depsToken, rawDirentArr[i].data.pointer, mt) == 1){
 			workingDirentArr[writeMarker] = rawDirentArr[i];
 			writeMarker++;
 
@@ -153,26 +169,20 @@ void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
 
 	while(writeMarker < direntArray.size){
 		for(int i = 0; i < direntArray.size; i++){
-			if(rawDirentArr[i].data.pointer != NULL){
-				plfile_t* lockFile = plSrvSafeOpen(PLSRV_STOP, rawDirentArr[i].data.pointer, mt);
-				plFGets(&buffer, lockFile);
-				if(plFGets(&buffer, lockFile) != 1){
-					plmltoken_t depsToken = plMLParse(buffer, mt);
-					plptr_t* depsList = depsToken.value.array.pointer;
-					size_t depCounter = 0;
+			int j = 0;
+			size_t depCounter = 0;
+			while(j < writeMarker && rawDirentArr[i].data.pointer != NULL){
+				if(getStopDeps(&buffer, &depsToken, rawDirentArr[i].data.pointer, mt) == 0 && isStringInPLMLStrArray(depsToken.value.array, workingDirentArr[j].data.pointer))
+					depCounter++;
+				j++;
+			}
 
-					int j = 0;
-					while(j < depsToken.value.array.size){
-						int k = 0;
-						while(k < writeMarker){
-							if(strcmp(depsList[j].pointer, workingDirentArr[k].data.pointer) == 0){
-								depCounter++;
-								j++;
-							}
-							k++;
-						}
-					}
-				}
+			if(depCounter == depsToken.value.array.size){
+				workingDirentArr[writeMarker] = rawDirentArr[i];
+				writeMarker++;
+
+				rawDirentArr[i].data.pointer = NULL;
+				rawDirentArr[i].data.size = 0;
 			}
 		}
 	}
@@ -203,7 +213,7 @@ void plSrvHalt(plmt_t* mt){
 	};
 	puts("* Stopping all sevices...");
 
-	plSrvDetermineHaltOrder(&dirents);
+	plSrvDetermineHaltOrder(dirents, mt);
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStop(direntsArr[i].data.pointer, mt);
 		nanosleep(&sleepconst, NULL);

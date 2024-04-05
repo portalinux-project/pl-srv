@@ -60,7 +60,7 @@ int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt){
 
 		procStatus = plSrvBlockingSpawn(service.args);
 
-		snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, WEXITSTATUS(status));
+		snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, WEXITSTATUS(procStatus));
 		plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 		if(service.respawn == true){
 			while(1){
@@ -69,7 +69,7 @@ int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt){
 
 				procStatus = plSrvBlockingSpawn(service.args);
 
-				snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, WEXITSTATUS(status));
+				snprintf(stringBuffer, 4096, "Process %d exited with status code %d", activePid, WEXITSTATUS(procStatus));
 				plRTLog(logFile, LOG_INFO, plRTStrFromCStr(stringBuffer, NULL));
 			}
 		}

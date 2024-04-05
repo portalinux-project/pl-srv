@@ -34,7 +34,7 @@ plfile_t* plSrvGetLogFile(void);
 int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt);
 
 long plSrvStrtonum(char* buffer);
-int plSrvCheckExist(char* path);
+bool plSrvCheckExist(char* path);
 void plSrvInfraTest(void);
 plfile_t* plSrvSafeOpen(plsrvactions_t mode, char* filename, plmt_t* mt);
 void plSrvRemoveLock(char* service);
@@ -42,4 +42,5 @@ plsrv_t plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt);
 
 int plSrvStart(char* service, plmt_t* mt);
 int plSrvStop(char* service, plmt_t* mt);
-void plSrvInitHalt(plsrvactions_t action, plmt_t* mt);
+void plSrvInit(plmt_t* mt);
+void plSrvHalt(plmt_t* mt);

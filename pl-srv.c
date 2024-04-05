@@ -42,24 +42,24 @@ int main(int argc, char* argv[]){
 		}else{
 			plSrvInfraTest();
 			if(strcmp("init", argv[1]) == 0){
-				plSrvInitHalt(PLSRV_INIT, mt);
+				plSrvInit(mt);
 			}else if(strcmp("halt", argv[1]) == 0){
-				plSrvInitHalt(PLSRV_HALT, mt);
+				plSrvHalt(mt);
 			}else if(strcmp("soft-reboot", argv[1]) == 0){
 				puts("* Soft rebooting system...");
-				plSrvInitHalt(PLSRV_HALT, mt);
-				plSrvInitHalt(PLSRV_INIT, mt);
+				plSrvHalt(mt);
+				plSrvInit(mt);
 			}else if(argc > 2){
 				if(strcmp("start", argv[1]) == 0){
 					for(int i = 2; i < argc; i++)
-						plSrvStartStop(PLSRV_START, argv[i], mt);
+						plSrvStart(argv[i], mt);
 				}else if(strcmp("stop", argv[1]) == 0){
 					for(int i = 2; i < argc; i++)
-						plSrvStartStop(PLSRV_STOP, argv[i], mt);
+						plSrvStop(argv[i], mt);
 				}else if(strcmp("restart", argv[1]) == 0){
 					for(int i = 2; i < argc; i++){
-						plSrvStartStop(PLSRV_STOP, argv[i], mt);
-						plSrvStartStop(PLSRV_START, argv[i], mt);
+						plSrvStop(argv[i], mt);
+						plSrvStart(argv[i], mt);
 					}
 				}
 			}else{
