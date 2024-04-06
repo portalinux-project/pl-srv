@@ -57,7 +57,7 @@ int plSrvStart(char* service, plmt_t* mt){
 			plSrvStart(((plstring_t*)srvStruct.deps.pointer)[i].data.pointer, mt);
 	}
 
-	if(plSrvCheckExist(realFilename) != -1){
+	if(plSrvCheckExist(realFilename)){
 		printf("* Service %s has already been started, skipping...\n", realFilename);
 		chdir(currentPath);
 		return 1;
@@ -186,6 +186,8 @@ void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
 			}
 		}
 	}
+
+	memcpy(direntArray.pointer, workingDirentArr, direntArray.size * sizeof(plstring_t));
 }
 
 void plSrvInit(plmt_t* mt){
