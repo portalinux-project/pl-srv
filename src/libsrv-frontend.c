@@ -21,7 +21,7 @@ void preStartStop(char* srvName, plsrvactions_t action, plmt_t* mt){
 int getStopDeps(plstring_t* buffer, plmltoken_t* tokenBuffer, char* filename, plmt_t* mt){
 	plfile_t* tempFile = plSrvSafeOpen(PLSRV_STOP, filename, mt);
 	plFGets(buffer, tempFile);
-	if(plFGets(buffer, tempFile) != 1){
+	if(plFGets(buffer, tempFile) == 0){
 		plFClose(tempFile);
 		plmltoken_t bufferToken = plMLParse(*buffer, mt);
 		memcpy(tokenBuffer, &bufferToken, sizeof(plmltoken_t));
