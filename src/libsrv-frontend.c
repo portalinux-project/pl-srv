@@ -122,7 +122,7 @@ int plSrvStop(char* service, plmt_t* mt){
 	plFGets(&buffer, lockFile);
 	plmltoken_t bufferToken = plMLParse(buffer, mt);
 	if(bufferToken.type != PLML_TYPE_INT)
-		plRTPanic("plSrvStartStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
+		plRTPanic("plSrvStop", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 	pidNum = bufferToken.value.integer;
 
 	plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
