@@ -18,20 +18,29 @@ void preStartStop(char* srvName, plsrvactions_t action, plmt_t* mt){
 	srvFile = plSrvSafeOpen(action, realFilename, mt);
 }
 
-int getStopDeps(plstring_t* buffer, plmltoken_t* tokenBuffer, char* filename, plmt_t* mt){
+plmltoken_t getStopDeps(char* filename, plmt_t* mt){
+	char* depsBuffer[65535] = "";
+	plstring_t buffer = {
+		.data = {
+			.pointer = depsBuffer,
+			.size = 65535
+		},
+		.isplChar = false,
+		.mt = NULL
+	};
 	plfile_t* tempFile = plSrvSafeOpen(PLSRV_STOP, filename, mt);
-	plFGets(buffer, tempFile);
-	if(plFGets(buffer, tempFile) == 0){
+	plmltoken_t retToken;
+	plFGets(&buffer, tempFile);
+	buffer.data.size == 65535;
+	if(plFGets(buffer, tempFile)){
 		plFClose(tempFile);
-		plmltoken_t bufferToken = plMLParse(*buffer, mt);
-		memcpy(tokenBuffer, &bufferToken, sizeof(plmltoken_t));
-		if(tokenBuffer->type != PLML_TYPE_STRING || !tokenBuffer->isArray)
-			return 1;
-
-		return 0;
+		retToken = plMLParse(buffer, mt);
+		if(retToken.type == PLML_TYPE_STRING && retToken.isArray)
+			return retToken;
 	}
 
-	return 1;
+	retToken.type = PLML_TYPE_NULL;
+	return retToken;
 }
 
 int isStringInPLMLStrArray(plptr_t array, char* string){
@@ -108,7 +117,7 @@ int plSrvStop(char* service, plmt_t* mt){
 	fflush(stdout);
 
 	plfile_t* lockFile = plSrvSafeOpen(PLSRV_STOP, realFilename, mt);
-	char numBuffer[65536] = "";
+	char numBuffer[16] = "";
 	plstring_t buffer = {
 		.data = {
 			.pointer = numBuffer,
@@ -128,9 +137,9 @@ int plSrvStop(char* service, plmt_t* mt){
 	plptr_t tempDirents = plRTGetDirents("/var/pl-srv/srv", mt);
 	plstring_t* tempDirentsArrPtr = tempDirents.pointer;
 	int offsetHolder = 0;
-	buffer.data.size = 65536;
 	for(int i = 0; i < tempDirents.size; i++){
-		if(getStopDeps(&buffer, &bufferToken, tempDirentsArrPtr[i].data.pointer, mt) == 0 && (offsetHolder = isStringInPLMLStrArray(bufferToken.value.array, service))){
+		bufferToken = getStopDeps(tempDirentsArrPtr[i].data.pointer, mt);
+		if(bufferToken.type != PLML_TYPE_NULL && (offsetHolder = isStringInPLMLStrArray(bufferToken.value.array, service))){
 			printf("Error: Service %s is depended on by service %s.\n", service, ((plptr_t*)bufferToken.value.array.pointer)[offsetHolder].pointer);
 			return 3;
 		}
@@ -145,20 +154,11 @@ int plSrvStop(char* service, plmt_t* mt){
 void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
 	plstring_t* rawDirentArr = direntArray.pointer;
 	plstring_t workingDirentArr[direntArray.size];
-	char rawBuffer[65536];
-	plstring_t buffer = {
-		.data = {
-			.pointer = rawBuffer,
-			.size = 65536
-		},
-		.isplChar = false,
-		.mt = NULL
-	};
-	size_t writeMarker = 0;
 	plmltoken_t depsToken;
 
 	for(int i = 0; i < direntArray.size; i++){
-		if(getStopDeps(&buffer, &depsToken, rawDirentArr[i].data.pointer, mt) == 1){
+		depsToken = getStopDeps(rawDirentArr[i].data.pointer, mt);
+		if(depsToken.type != PLML_TYPE_NULL){
 			workingDirentArr[writeMarker] = rawDirentArr[i];
 			writeMarker++;
 
@@ -172,7 +172,8 @@ void plSrvDetermineHaltOrder(plptr_t direntArray, plmt_t* mt){
 			int j = 0;
 			size_t depCounter = 0;
 			while(j < writeMarker && rawDirentArr[i].data.pointer != NULL){
-				if(getStopDeps(&buffer, &depsToken, rawDirentArr[i].data.pointer, mt) == 0 && isStringInPLMLStrArray(depsToken.value.array, workingDirentArr[j].data.pointer))
+				depsToken = getStopDeps(rawDirentArr[i].data.pointer, mt);
+				if(depsToken.type != PLML_TYPE_NULL && isStringInPLMLStrArray(depsToken.value.array, workingDirentArr[j].data.pointer))
 					depCounter++;
 				j++;
 			}
