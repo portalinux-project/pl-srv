@@ -1,5 +1,5 @@
 /******************************************************\
- pl-srv, v0.04
+ pl-srv, v1.00
  (c) 2023 pocketlinux32, Under MPL 2.0
  pl-init.c: Initializes the system enough to run pl-srv
 \******************************************************/
@@ -9,9 +9,15 @@
 #include <sys/mount.h>
 #include <sys/reboot.h>
 
+// Console setup header
+#include <termios.h>
+
 bool inChroot = false;
 
 void signalHandler(int signal){
+	if(signal != SIGUSR2 && signal != SIGUSR1 && signal != SIGTERM)
+		return;
+
 	plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/pl-srv", NULL), plRTStrFromCStr("halt", NULL) };
 	plptr_t execArr = {
 		.pointer = execArgs,
@@ -117,6 +123,48 @@ int main(int argc, char* argv[]){
 		plRTSetSignal(SIGUSR1);
 		plRTSetSignal(SIGUSR2);
 		puts("Done.");
+
+		fputs("* Setting up console: ", stdout);
+
+		char defaultConsole[10] = "/dev/tty1";
+		char* consoleToUse;
+		if((consoleToUse = getenv("CONSOLE")) == NULL){
+			if((consoleToUse = getenv("console")) == NULL)
+				consoleToUse = defaultConsole;
+		}
+
+		int consoleFD = open(consoleToUse, O_RDWR | O_NONBLOCK | O_NOCTTY);
+		if(consoleFD < 0){
+			puts("Failed.");
+		}else{
+			dup2(consoleFD, 0);
+			dup2(consoleFD, 1);
+			dup2(consoleFD, 2);
+
+			/* Terminal Setup Routine. Taken from Toybox's pending/init.c */
+			struct termios defaultTerm;
+			tcgetattr(consoleFD, &defaultTerm);
+			defaultTerm.c_cc[VINTR] = 3;    //ctrl-c
+			defaultTerm.c_cc[VQUIT] = 28;   /*ctrl-\*/
+			defaultTerm.c_cc[VERASE] = 127; //ctrl-?
+			defaultTerm.c_cc[VKILL] = 21;   //ctrl-u
+			defaultTerm.c_cc[VEOF] = 4;     //ctrl-d
+			defaultTerm.c_cc[VSTART] = 17;  //ctrl-q
+			defaultTerm.c_cc[VSTOP] = 19;   //ctrl-s
+			defaultTerm.c_cc[VSUSP] = 26;   //ctrl-z
+
+			defaultTerm.c_line = 0;
+			defaultTerm.c_cflag &= PARODD|PARENB|CSTOPB|CSIZE;
+			defaultTerm.c_cflag |= CLOCAL|HUPCL|CREAD;
+
+			//Enable start/stop input and output control + map CR to NL on input
+			defaultTerm.c_iflag = IXON|IXOFF|ICRNL;
+
+			//Map NL to CR-NL on output
+			defaultTerm.c_oflag = ONLCR|OPOST;
+			defaultTerm.c_lflag = IEXTEN|ECHOK|ECHOE|ECHO|ICANON|ISIG;
+			tcsetattr(consoleFD, TCSANOW, &defaultTerm);
+		}
 
 		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/sh", NULL), plRTStrFromCStr("/etc/pl-srv/basic-startup", NULL) };
 		plptr_t execArr = {
