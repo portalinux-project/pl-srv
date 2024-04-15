@@ -165,6 +165,8 @@ int main(int argc, char* argv[]){
 			defaultTerm.c_oflag = ONLCR|OPOST;
 			defaultTerm.c_lflag = IEXTEN|ECHOK|ECHOE|ECHO|ICANON|ISIG;
 			tcsetattr(consoleFD, TCSANOW, &defaultTerm);
+
+			puts("Done.");
 		}
 
 		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/sh", NULL), plRTStrFromCStr("/etc/pl-srv/basic-startup", NULL) };
