@@ -11,6 +11,7 @@
 
 // Console setup header
 #include <termios.h>
+#include <fcntl.h>
 
 bool inChroot = false;
 

@@ -4,6 +4,7 @@
  libsrv.h: pl-srv as a library, source header
 \********************************************/
 #define _XOPEN_SOURCE 700
+#define _ALL_SOURCE
 #pragma once
 #include <plrt.h>
 #include <libgen.h>
