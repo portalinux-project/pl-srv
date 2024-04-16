@@ -7,6 +7,7 @@
 
 void signalHandler(int signal){
 	pid_t activePid = plSrvGetActivePid();
+	int status = 0;
 	plfile_t* logFileHandle = plSrvGetLogFile();
 
 	if(activePid > 1){
@@ -15,6 +16,7 @@ void signalHandler(int signal){
 			case SIGINT:
 				plRTLog(logFileHandle, LOG_INFO, plRTStrFromCStr("Halting supervising process", NULL));
 				kill(activePid, SIGTERM);
+				waitpid(activePid, &status, 0);
 				break;
 		}
 	}

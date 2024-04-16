@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
 			dup2(consoleFD, 1);
 			dup2(consoleFD, 2);
 
-			/* Terminal Setup Routine. Taken from Toybox's pending/init.c */
+			/* Terminal Setup Routine. Based on Toybox's pending/init.c */
 			struct termios defaultTerm;
 			tcgetattr(consoleFD, &defaultTerm);
 			defaultTerm.c_cc[VINTR] = 3;    //ctrl-c
@@ -154,16 +154,6 @@ int main(int argc, char* argv[]){
 			defaultTerm.c_cc[VSTOP] = 19;   //ctrl-s
 			defaultTerm.c_cc[VSUSP] = 26;   //ctrl-z
 
-			/*defaultTerm.c_line = 0;
-			defaultTerm.c_cflag &= PARODD|PARENB|CSTOPB|CSIZE;
-			defaultTerm.c_cflag |= CLOCAL|HUPCL|CREAD;
-
-			//Enable start/stop input and output control + map CR to NL on input
-			defaultTerm.c_iflag = IXON|IXOFF|ICRNL;
-
-			//Map NL to CR-NL on output
-			defaultTerm.c_oflag = ONLCR|OPOST;
-			defaultTerm.c_lflag = IEXTEN|ECHOK|ECHOE|ECHO|ICANON|ISIG;*/
 			tcsetattr(0, TCSANOW, &defaultTerm);
 
 			puts("Done.");
@@ -171,6 +161,10 @@ int main(int argc, char* argv[]){
 
 		pid_t exec = -1;
 		int status = 0;
+		struct timespec sleepConst = {
+			.tv_sec = 0,
+			.tv_nsec = 1000000
+		};
 		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/sh", NULL), plRTStrFromCStr("/etc/pl-srv/basic-startup", NULL) };
 		plptr_t execArr = {
 			.pointer = execArgs,
@@ -189,6 +183,9 @@ int main(int argc, char* argv[]){
 		exec = plRTSpawn(execArr);
 		waitpid(exec, &status, 0);
 
-		while(true);
+		while(true){
+			waitpid(-1, &status, WNOHANG);
+			nanosleep(&sleepConst, NULL);
+		}
 	}
 }
