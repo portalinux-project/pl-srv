@@ -154,7 +154,7 @@ int main(int argc, char* argv[]){
 			defaultTerm.c_cc[VSTOP] = 19;   //ctrl-s
 			defaultTerm.c_cc[VSUSP] = 26;   //ctrl-z
 
-			defaultTerm.c_line = 0;
+			/*defaultTerm.c_line = 0;
 			defaultTerm.c_cflag &= PARODD|PARENB|CSTOPB|CSIZE;
 			defaultTerm.c_cflag |= CLOCAL|HUPCL|CREAD;
 
@@ -163,8 +163,8 @@ int main(int argc, char* argv[]){
 
 			//Map NL to CR-NL on output
 			defaultTerm.c_oflag = ONLCR|OPOST;
-			defaultTerm.c_lflag = IEXTEN|ECHOK|ECHOE|ECHO|ICANON|ISIG;
-			tcsetattr(consoleFD, TCSANOW, &defaultTerm);
+			defaultTerm.c_lflag = IEXTEN|ECHOK|ECHOE|ECHO|ICANON|ISIG;*/
+			tcsetattr(0, TCSANOW, &defaultTerm);
 
 			puts("Done.");
 		}
