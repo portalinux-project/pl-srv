@@ -169,6 +169,8 @@ int main(int argc, char* argv[]){
 			puts("Done.");
 		}
 
+		pid_t exec = -1;
+		int status = 0;
 		plstring_t execArgs[2] = { plRTStrFromCStr("/usr/bin/sh", NULL), plRTStrFromCStr("/etc/pl-srv/basic-startup", NULL) };
 		plptr_t execArr = {
 			.pointer = execArgs,
@@ -177,15 +179,15 @@ int main(int argc, char* argv[]){
 
 		if(plSrvCheckExist("/etc/pl-srv/basic-startup") != -1){
 			fputs("* Running /etc/pl-srv/basic-startup...\n", stdout);
-			pid_t exec = plRTSpawn(execArr);
-			int status = 0;
+			exec = plRTSpawn(execArr);
 			waitpid(exec, &status, 0);
 		}
 
 		puts("* Running pl-srv...\n");
 		execArgs[0] = plRTStrFromCStr("/usr/bin/pl-srv", NULL);
 		execArgs[1] = plRTStrFromCStr("init", NULL);
-		plRTSpawn(execArr);
+		exec = plRTSpawn(execArr);
+		waitpid(exec, &status, 0);
 
 		while(true);
 	}
