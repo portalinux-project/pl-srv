@@ -1,5 +1,5 @@
 /***************************************************************\
- pl-srv, v1.00
+ pl-srv, v0.07
  (c) 2024 CinnamonWolfy, Under MPL 2.0
  libsrv-error.c: pl-srv as a library, error handling source file
 \***************************************************************/
