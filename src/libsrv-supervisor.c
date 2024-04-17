@@ -4,6 +4,7 @@
  libsrv-supervisor.c: pl-srv as a library, supervisor source file
 \****************************************************************/
 #include <libsrv.h>
+#include <time.h>
 
 pid_t activePid = 0;
 plfile_t* logFile = NULL;
@@ -51,8 +52,19 @@ int plSrvExecuteSupervisor(plsrv_t service, plmt_t* mt){
 		}
 
 		if(service.background){
-			freopen("/dev/null", "r", stdin);
-			freopen("/dev/null", "w", stdout);
+			if(service.logging){
+				snprintf(stringBuffer, 4096, "/var/log/%s", basename(((char**)service.args.pointer)[0]));
+				mkdir(stringBuffer, 0644);
+
+				struct timespec timestamp;
+				clock_gettime(CLOCK_REALTIME, &timestamp);
+				snprintf(stringBuffer, 4096, "/var/log/%s/%d-%d.log", basename(((char**)service.args.pointer)[0]), timestamp.tv_sec, timestamp.tv_nsec);
+				freopen(stringBuffer, "r", stdin);
+				freopen(stringBuffer, "r", stdout);
+			}else{
+				freopen("/dev/null", "r", stdin);
+				freopen("/dev/null", "w", stdout);
+			}
 		}
 
 		snprintf(stringBuffer, 4096, "Started and supervising service %s", basename(((char**)service.args.pointer)[0]));

@@ -19,7 +19,8 @@ plsrv_t plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
 			.size = 0
 		},
 		.respawn = false,
-		.background = false
+		.background = false,
+		.logging = false
 	};
 
 	char rawBuf[256] = "";
@@ -61,8 +62,12 @@ plsrv_t plSrvGenerateServiceStruct(plfile_t* srvFile, plmt_t* mt){
 				((plstring_t*)returnStruct.deps.pointer)[i].mt = mt;
 				((plstring_t*)returnStruct.deps.pointer)[i].isplChar = false;
 			}
-		}
+		}else if(strcmp("logging", token.name.data.pointer) == 0){
+			if(token.type != PLML_TYPE_BOOL)
+				plRTPanic("plSrvGenerateServiceStruct", PLRT_ERROR | PLRT_INVALID_TOKEN, false);
 
+			returnStruct.logging = token.value.boolean;
+		}
 		buffer.data.size = 256;
 	}
 

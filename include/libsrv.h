@@ -27,6 +27,7 @@ typedef struct plsrv {
 	plptr_t deps;
 	bool respawn;
 	bool background;
+	bool logging;
 } plsrv_t;
 
 void signalHandler(int signal);
