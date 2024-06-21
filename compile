@@ -88,9 +88,16 @@ compile_static_lib(){
 
 	for i in $libsrc; do
 		_compile_obj $srcdir/$i.c "static"
+		if [ "$libobj" = "" ]; then
+			libobj="obj/$(basename $i)-static.o"
+		else
+			libobj="$libobj obj/$(basename $i)-static.o"
+		fi
 	done
+
 	printf "Creating static library $libname..."
-	$AR rc lib$libname.a $(find obj | grep static) 2>&1 >/dev/null
+	$AR rc lib$libname.a $libobj 2>&1 >/dev/null
+	libobj=""
 	echo "Done."
 }
 
@@ -99,9 +106,16 @@ compile_shared_lib(){
 
 	for i in $libsrc; do
 		_compile_obj $srcdir/$i.c "shared"
+		if [ "$libobj" = "" ]; then
+			libobj="obj/$(basename $i)-shared.o"
+		else
+			libobj="$libobj obj/$(basename $i)-shared.o"
+		fi
 	done
+
 	printf "Creating shared library $libname..."
-	$CC -shared $(find obj | grep shared) -o lib$libname.so $CFLAGS $LDFLAGS
+	$CC -shared $libobj -o lib$libname.so $CFLAGS $LDFLAGS
+	libobj=""
 	echo "Done."
 	rm *.o -f
 }
@@ -204,7 +218,7 @@ clean_project(){
 	fi
 }
 
-printf "PocketLinux32's Generic C Build System v0.03\n\n"
+printf "PocketLinux32's Generic C Build System v0.04\n\n"
 
 if [ $# -lt 1 ]; then
 	echo "Error: Not enough arguments. Please run $0 help to see all of the valid options and try again"
