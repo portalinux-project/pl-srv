@@ -1,5 +1,5 @@
 /********************************************\
- pl-srv, v0.07
+ pl-srv, v0.07.1
  (c) 2024 CinnamonWolfy, Under MPL 2.0
  libsrv.h: pl-srv as a library, source header
 \********************************************/
