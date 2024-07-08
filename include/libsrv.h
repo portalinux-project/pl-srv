@@ -5,6 +5,7 @@
 \********************************************/
 #define _XOPEN_SOURCE 700
 #define _ALL_SOURCE
+#define PLRT_ENABLE_HANDLER
 #pragma once
 #include <plrt.h>
 #include <libgen.h>

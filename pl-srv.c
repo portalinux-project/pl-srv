@@ -1,5 +1,5 @@
 /*****************************************\
- pl-srv, v0.07
+ pl-srv, v0.07.1
  (c) 2023 pocketlinux32, Under MPL 2.0
  pl-srv.c: Starts and supervises processes
 \*****************************************/
