@@ -226,12 +226,4 @@ void plSrvHalt(plmt_t* mt){
 		nanosleep(&sleepconst, NULL);
 	}
 	plRTFreeParsedString(dirents);
-
-	fputs("* Force-killing all processes...", stdout);
-	kill(-1, SIGKILL);
-	puts("Done.");
-
-	fputs("* Syncing cached file ops...", stdout);
-	sync();
-	puts("Done.");
 }

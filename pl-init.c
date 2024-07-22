@@ -28,6 +28,14 @@ void signalHandler(int signal){
 	pid_t execPid = plRTSpawn(execArr);
 	waitpid(execPid, &status, 0);
 
+	fputs("* Force-killing all processes...", stdout);
+	kill(-1, SIGKILL);
+	puts("Done.");
+
+	fputs("* Syncing cached file ops...", stdout);
+	sync();
+	puts("Done.");
+
 	switch(signal){
 		case SIGUSR2:
 			puts("* Powering off...");
