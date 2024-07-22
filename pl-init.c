@@ -1,5 +1,5 @@
 /******************************************************\
- pl-srv, v0.07.1
+ pl-srv, v0.08.1
  (c) 2023 pocketlinux32, Under MPL 2.0
  pl-init.c: Initializes the system enough to run pl-srv
 \******************************************************/
@@ -77,7 +77,7 @@ int safeMountBoot(char* dest, char* fstype){
 int main(int argc, char* argv[]){
 	pid_t pid = getpid();
 	uid_t uid = getuid();
-	puts("PortaLinux Init v0.08");
+	puts("PortaLinux Init v0.08.1");
 	puts("(c) 2024 CinnamonWolfy, Under MPLv2.0\n");
 
 	// Argument parsing
