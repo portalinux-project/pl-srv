@@ -205,8 +205,10 @@ void plSrvInit(plmt_t* mt){
 	puts("* Starting all sevices...");
 
 	for(int i = 0; i < dirents.size; i++){
-		plSrvStart(direntsArr[i].data.pointer, mt);
-		nanosleep(&sleepconst, NULL);
+		if(strstr((char*)direntsArr[i].data.pointer, ".") != direntsArr[i].data.pointer){
+			plSrvStart(direntsArr[i].data.pointer, mt);
+			nanosleep(&sleepconst, NULL);
+		}
 	}
 	plRTFreeParsedString(dirents);
 }
