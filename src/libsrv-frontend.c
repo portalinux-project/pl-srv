@@ -215,14 +215,17 @@ void plSrvInit(plmt_t* mt){
 
 void plSrvHalt(plmt_t* mt){
 	plptr_t dirents = plRTGetDirents("/var/pl-srv/srv", mt);
-	plstring_t* direntsArr = dirents.pointer;
 	struct timespec sleepconst = {
 		.tv_sec = 0,
 		.tv_nsec = 10000000
 	};
 	puts("* Stopping all sevices...");
 
+	dirents.pointer += 2 * sizeof(plstring_t);
+	dirents.size -= 2;
 	plSrvDetermineHaltOrder(dirents, mt);
+
+	plstring_t* direntsArr = dirents.pointer;
 	for(int i = 0; i < dirents.size; i++){
 		plSrvStop(direntsArr[i].data.pointer, mt);
 		nanosleep(&sleepconst, NULL);

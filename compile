@@ -128,6 +128,11 @@ compile_prog(){
 
 install_lib(){
 	printf "Installing library $libname..."
+	if [ ! -d "$includedir" ] || [ ! -d "$libdir" ]; then
+		mkdir -p "$includedir"
+		mkdir -p "$libdir"
+	fi
+
 	for i in $(ls include | grep ".h"); do
 		cp include/$i "$includedir"
 	done
@@ -142,6 +147,10 @@ install_prog(){
 	fi
 
 	printf "Installing program $progname..."
+	if [ ! -d "$bindir" ]; then
+		mkdir -p "$bindir"
+	fi
+
 	mv $progname "$bindir"
 	echo "Done."
 }
@@ -218,7 +227,7 @@ clean_project(){
 	fi
 }
 
-printf "PocketLinux32's Generic C Build System v0.04\n\n"
+printf "CinnamonWolfy's Generic C Build System v1.00\n\n"
 
 if [ $# -lt 1 ]; then
 	echo "Error: Not enough arguments. Please run $0 help to see all of the valid options and try again"

@@ -41,6 +41,12 @@ generate_config(){
 		fatal_error "Invalid main project field"
 	fi
 
+	prefix=$(echo "$prefix" | sed "s/~/$(echo $HOME | sed 's/\//\\\//g')/g")
+	exec_prefix=$(echo "$exec_prefix" | sed "s/~/$(echo $HOME | sed 's/\//\\\//g')/g")
+	bindir=$(echo "$bindir" | sed "s/~/$(echo $HOME | sed 's/\//\\\//g')/g")
+	libdir=$(echo "$libdir" | sed "s/~/$(echo $HOME | sed 's/\//\\\//g')/g")
+	includedir=$(echo "$includedir" | sed "s/~/$(echo $HOME | sed 's/\//\\\//g')/g")
+
 	echo "Checking install prefix...$prefix"
 	echo "Checking executable install prefix...$exec_prefix"
 	echo "Checking binary install prefix...$bindir"
@@ -169,7 +175,7 @@ while [ $# -ne 0 ]; do
 			fi
 			;;
 		--help | --*)
-			printf "PocketLinux32's Generic C11 Configure System v0.05\n\n"
+			printf "CinnamonWolfy's Generic C11 Configure System v0.06\n\n"
 			printf "Usage: $0 [OPTIONS]...\n\n"
 			echo "Install Options"
 			echo "--prefix=DIR			Set install path (default=/usr/local)"
